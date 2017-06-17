@@ -1,0 +1,52 @@
+{
+  "name": "wolkenkit-flows",
+  "version": "0.0.0",
+  "description": "wolkenkit-flows is the flow engine of wolkenkit.",
+  "contributors": [
+    {
+      "name": "Golo Roden",
+      "email": "golo.roden@thenativeweb.io"
+    },
+    {
+      "name": "Matthias Wagler",
+      "email": "matthias.wagler@thenativeweb.io"
+    }
+  ],
+  "private": true,
+  "dependencies": {
+    "async": "2.4.1",
+    "lodash": "4.17.4",
+    "pg": "6.2.4",
+    "processenv": "0.1.1",
+    "require-dir": "0.3.2",
+    "sparbuch": "1.0.0",
+    "stack-trace": "0.0.10",
+    "tailwind": "1.0.0",
+    "uuidv4": "0.5.0",
+    "wolkenkit-application": "1.0.0"
+  },
+  "devDependencies": {
+    "assertthat": "0.9.0",
+    "cases": "0.1.1",
+    "commands-events": "1.0.0",
+    "flaschenpost": "0.15.6",
+    "hase": "0.5.4",
+    "knockat": "0.2.1",
+    "measure-time": "3.1.0",
+    "needle": "1.6.0",
+    "record-stdstreams": "0.1.0",
+    "roboter": "0.15.2",
+    "roboter-server": "0.15.2",
+    "runfork": "0.3.1",
+    "shelljs": "0.7.8",
+    "streamtoarray": "0.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/thenativeweb/wolkenkit-flows.git"
+  },
+  "keywords": [
+    "wolkenkit"
+  ],
+  "license": "AGPL-3.0"
+}
