@@ -4,14 +4,14 @@ const async = require('async'),
       shell = require('shelljs');
 
 const env = require('../helpers/env'),
-      waitForHost = require('../helpers/waitForHost');
+      waitForPostgres = require('../helpers/waitForPostgres');
 
 async.series({
   runPostgres (callback) {
-    shell.exec('docker run -d -p 5435:5432 -e POSTGRES_USER=wolkenkit -e POSTGRES_PASSWORD=wolkenkit -e POSTGRES_DB=wolkenkit --name postgres-performance postgres:9.6.2-alpine', callback);
+    shell.exec('docker run -d -p 5435:5432 -e POSTGRES_USER=wolkenkit -e POSTGRES_PASSWORD=wolkenkit -e POSTGRES_DB=wolkenkit --name postgres-performance postgres:9.6.4-alpine', callback);
   },
   waitForPostgres (callback) {
-    waitForHost(env.POSTGRES_URL_PERFORMANCE, callback);
+    waitForPostgres({ url: env.POSTGRES_URL_PERFORMANCE }, callback);
   }
 }, err => {
   if (err) {

@@ -14,7 +14,9 @@ const assert = require('assertthat'),
 
 const buildEvent = require('../helpers/buildEvent'),
       env = require('../helpers/env'),
-      waitForHost = require('../helpers/waitForHost');
+      waitForHost = require('../helpers/waitForHost'),
+      waitForPostgres = require('../helpers/waitForPostgres'),
+      waitForRabbitMq = require('../helpers/waitForRabbitMq');
 
 const logger = flaschenpost.getLogger();
 
@@ -145,7 +147,7 @@ suite('integrationTests', function () {
 
   teardown(done => {
     mq.connection.close(errMq => {
-      if (errMq && errMq.message !== 'Connection closed (Error: read ECONNRESET)') {
+      if (errMq && errMq.message !== 'Connection closed (Error: Unexpected close)') {
         return done(errMq);
       }
 
@@ -161,7 +163,7 @@ suite('integrationTests', function () {
   test('exits when the connection to the command bus / flow bus is lost.', done => {
     appLifecycle.once('exit', () => {
       shell.exec('docker start rabbitmq-integration');
-      waitForHost(env.RABBITMQ_URL_INTEGRATION, done);
+      waitForRabbitMq({ url: env.RABBITMQ_URL_INTEGRATION }, done);
     });
 
     shell.exec('docker kill rabbitmq-integration');
@@ -170,7 +172,7 @@ suite('integrationTests', function () {
   test('exits when the connection to the event store is lost.', done => {
     appLifecycle.once('exit', () => {
       shell.exec('docker start postgres-integration');
-      waitForHost(env.POSTGRES_URL_INTEGRATION, err => {
+      waitForPostgres({ url: env.POSTGRES_URL_INTEGRATION }, err => {
         assert.that(err).is.null();
 
         // We need to wait for a few seconds after having started
