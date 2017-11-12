@@ -10,13 +10,13 @@ At the moment, installation of this module must be made manually.
 
 To build this module use [roboter](https://www.npmjs.com/package/roboter).
 
-```bash
+```shell
 $ bot
 ```
 
 To run the performance tests use the following command.
 
-```bash
+```shell
 $ bot test-performance
 ```
 
