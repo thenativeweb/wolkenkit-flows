@@ -3,8 +3,7 @@
 const EventHandler = require('../EventHandler'),
       getClassifiedFlows = require('./getClassifiedFlows'),
       runStatefulFlows = require('./runStatefulFlows'),
-      runStatelessFlows = require('./runStatelessFlows'),
-      Services = require('../EventHandler/Services');
+      runStatelessFlows = require('./runStatelessFlows');
 
 const appLogic = function ({ app, eventStore, flows, writeModel }) {
   if (!app) {
@@ -44,20 +43,13 @@ const appLogic = function ({ app, eventStore, flows, writeModel }) {
     const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
           unpublishedCommands = [];
 
-    const services = new Services({
-      app,
-      domainEvent,
-      unpublishedCommands,
-      writeModel
-    });
-
     const statefulFlows = classifiedFlows.stateful[eventName] || [],
           statelessFlows = classifiedFlows.stateless[eventName] || [];
 
     try {
       await Promise.all([
-        runStatefulFlows({ eventHandler, flows: statefulFlows, domainEvent, services }),
-        runStatelessFlows({ eventHandler, flows: statelessFlows, domainEvent, services })
+        runStatefulFlows({ eventHandler, flows: statefulFlows, domainEvent }),
+        runStatelessFlows({ eventHandler, flows: statelessFlows, domainEvent })
       ]);
     } catch (ex) {
       logger.error('Failed to handle event.', { domainEvent, ex });

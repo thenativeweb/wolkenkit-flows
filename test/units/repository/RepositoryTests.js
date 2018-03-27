@@ -16,7 +16,7 @@ const buildEvent = require('../../helpers/buildEvent'),
       FlowAggregate = require('../../../repository/FlowAggregate'),
       Repository = require('../../../repository/Repository');
 
-const app = tailwind.createApp();
+const app = tailwind.createApp({});
 
 const { flows } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', 'app'));
 

@@ -1,5 +1,7 @@
 'use strict';
 
+const getServices = require('./services/get');
+
 class EventHandler {
   constructor ({ app }) {
     if (!app) {
@@ -9,15 +11,12 @@ class EventHandler {
     this.logger = app.services.getLogger();
   }
 
-  async forStatelessFlow ({ flow, domainEvent, services }) {
+  async forStatelessFlow ({ flow, domainEvent }) {
     if (!flow) {
       throw new Error('Flow is missing.');
     }
     if (!domainEvent) {
       throw new Error('Domain event is missing.');
-    }
-    if (!services) {
-      throw new Error('Services are missing.');
     }
 
     const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`;
@@ -27,6 +26,9 @@ class EventHandler {
       this.logger.error('Failed to run reaction.', { reason });
     };
 
+    const { app, writeModel, repository } = this;
+    const services = getServices({ app, flow, repository, writeModel });
+
     try {
       await eventListener(domainEvent, services);
     } catch (ex) {
@@ -34,15 +36,15 @@ class EventHandler {
     }
   }
 
-  async forStatefulFlow ({ flowAggregate, domainEvent, services }) {
+  async forStatefulFlow ({ flow, flowAggregate, domainEvent }) {
+    if (!flow) {
+      throw new Error('Flow is missing.');
+    }
     if (!flowAggregate) {
       throw new Error('Flow aggregate is missing.');
     }
     if (!domainEvent) {
       throw new Error('Domain event is missing.');
-    }
-    if (!services) {
-      throw new Error('Services are missing.');
     }
 
     const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
@@ -59,6 +61,9 @@ class EventHandler {
     if (!transition) {
       return;
     }
+
+    const { app, writeModel, repository } = this;
+    const services = getServices({ app, flow, repository, writeModel });
 
     try {
       transition(flowAggregate.api.forTransitions, domainEvent);

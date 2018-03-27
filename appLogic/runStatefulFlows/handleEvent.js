@@ -1,6 +1,9 @@
 'use strict';
 
-const handleEvent = async function ({ flowAggregate, domainEvent, eventHandler, services }) {
+const handleEvent = async function ({ flow, flowAggregate, domainEvent, eventHandler }) {
+  if (!flow) {
+    throw new Error('Flow is missing.');
+  }
   if (!flowAggregate) {
     throw new Error('Flow aggregate is missing.');
   }
@@ -10,11 +13,8 @@ const handleEvent = async function ({ flowAggregate, domainEvent, eventHandler, 
   if (!eventHandler) {
     throw new Error('Event handler is missing.');
   }
-  if (!services) {
-    throw new Error('Services are missing.');
-  }
 
-  await eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services });
+  await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent });
 };
 
 module.exports = handleEvent;

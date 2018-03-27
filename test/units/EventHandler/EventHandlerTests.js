@@ -11,9 +11,9 @@ const assert = require('assertthat'),
 const buildEvent = require('../../helpers/buildEvent'),
       EventHandler = require('../../../EventHandler'),
       FlowAggregate = require('../../../repository/FlowAggregate'),
-      Services = require('../../../EventHandler/Services');
+      getServices = require('../../../EventHandler/services/get');
 
-const app = tailwind.createApp();
+const app = tailwind.createApp({});
 
 const { flows, writeModel } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', 'app'));
 
@@ -30,7 +30,7 @@ const buildServices = function (options) {
 
   const { domainEvent, unpublishedCommands } = options;
 
-  return new Services({
+  return getServices({
     app,
     domainEvent,
     unpublishedCommands,

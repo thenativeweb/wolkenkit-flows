@@ -10,7 +10,7 @@ const assert = require('assertthat'),
 const buildEvent = require('../../helpers/buildEvent'),
       FlowAggregate = require('../../../repository/FlowAggregate');
 
-const app = tailwind.createApp();
+const app = tailwind.createApp({});
 
 const { flows } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', 'app'));
 
