@@ -25,8 +25,8 @@ suite('saveFlowAggregate', () => {
     const flowAggregate = {};
 
     const repository = {
-      async saveAggregate (flowAggregateToSave) {
-        assert.that(flowAggregateToSave).is.sameAs(flowAggregate);
+      async saveAggregate ({ aggregate }) {
+        assert.that(aggregate).is.sameAs(flowAggregate);
       }
     };
 

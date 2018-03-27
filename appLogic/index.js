@@ -22,7 +22,7 @@ const appLogic = function ({ app, eventStore, flows, writeModel }) {
   const logger = app.services.getLogger();
 
   const classifiedFlows = getClassifiedFlows(flows),
-        eventHandler = new EventHandler({ app });
+        eventHandler = new EventHandler({ app, writeModel });
 
   [
     { connection: app.commandbus.outgoing, description: 'command bus' },

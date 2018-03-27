@@ -19,9 +19,7 @@ const runStatelessFlows = async function ({ eventHandler, flows, domainEvent, un
     throw new Error('Unpublished commands are missing.');
   }
 
-  await Promise.all(map(flows, async (flow, flowName) => {
-    flow.name = flowName;
-
+  await Promise.all(map(flows, async flow => {
     await workflow.handleEvent({ eventHandler, flow, domainEvent, unpublishedCommands });
   }));
 };

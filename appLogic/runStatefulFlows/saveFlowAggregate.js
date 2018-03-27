@@ -8,7 +8,7 @@ const saveFlowAggregate = async function ({ flowAggregate, repository }) {
     throw new Error('Repository is missing.');
   }
 
-  await repository.saveAggregate(flowAggregate);
+  await repository.saveAggregate({ aggregate: flowAggregate });
 };
 
 module.exports = saveFlowAggregate;

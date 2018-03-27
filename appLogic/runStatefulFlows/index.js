@@ -21,11 +21,9 @@ const runStatefulFlows = async function ({ eventHandler, flows, domainEvent, unp
     throw new Error('Unpublished commands are missing.');
   }
 
-  await Promise.all(map(flows, async (flow, flowName) => {
-    flow.name = flowName;
-
+  await Promise.all(map(flows, async flow => {
     const flowId = workflow.getFlowId({ domainEvent, flow });
-    const flowAggregate = workflow.loadFlowAggregate({ flow, flowId, repository, domainEvent });
+    const flowAggregate = await workflow.loadFlowAggregate({ flow, flowId, repository, domainEvent });
 
     await workflow.handleEvent({ flow, flowAggregate, domainEvent, eventHandler, unpublishedCommands });
     await workflow.saveFlowAggregate({ flowAggregate, repository });
