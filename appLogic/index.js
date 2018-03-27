@@ -1,31 +1,24 @@
 'use strict';
 
-const async = require('async');
-
 const EventHandler = require('../EventHandler'),
       getClassifiedFlows = require('./getClassifiedFlows'),
       runStatefulFlows = require('./runStatefulFlows'),
       runStatelessFlows = require('./runStatelessFlows'),
       Services = require('../EventHandler/Services');
 
-const appLogic = function (options) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.app) {
+const appLogic = function ({ app, eventStore, flows, writeModel }) {
+  if (!app) {
     throw new Error('App is missing.');
   }
-  if (!options.eventStore) {
+  if (!eventStore) {
     throw new Error('Event store is missing.');
   }
-  if (!options.flows) {
+  if (!flows) {
     throw new Error('Flows are missing.');
   }
-  if (!options.writeModel) {
+  if (!writeModel) {
     throw new Error('Write model is missing.');
   }
-
-  const { app, eventStore, flows, writeModel } = options;
 
   const logger = app.services.getLogger();
 
@@ -45,7 +38,7 @@ const appLogic = function (options) {
     });
   });
 
-  app.flowbus.incoming.on('data', domainEvent => {
+  app.flowbus.incoming.on('data', async domainEvent => {
     logger.info('Received event.', { domainEvent });
 
     const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
@@ -61,23 +54,24 @@ const appLogic = function (options) {
     const statefulFlows = classifiedFlows.stateful[eventName] || [],
           statelessFlows = classifiedFlows.stateless[eventName] || [];
 
-    async.parallel([
-      done => runStatefulFlows({ eventHandler, flows: statefulFlows, domainEvent, services }, done),
-      done => runStatelessFlows({ eventHandler, flows: statelessFlows, domainEvent, services }, done)
-    ], err => {
-      if (err) {
-        logger.error('Failed to handle event.', { domainEvent, err });
+    try {
+      await Promise.all([
+        runStatefulFlows({ eventHandler, flows: statefulFlows, domainEvent, services }),
+        runStatelessFlows({ eventHandler, flows: statelessFlows, domainEvent, services })
+      ]);
+    } catch (ex) {
+      logger.error('Failed to handle event.', { domainEvent, ex });
+      domainEvent.discard();
 
-        return domainEvent.discard();
-      }
+      return;
+    }
 
-      unpublishedCommands.forEach(command => {
-        app.commandbus.outgoing.write(command);
-      });
-
-      logger.info('Successfully handled event.', { domainEvent });
-      domainEvent.next();
+    unpublishedCommands.forEach(command => {
+      app.commandbus.outgoing.write(command);
     });
+
+    logger.info('Successfully handled event.', { domainEvent });
+    domainEvent.next();
   });
 };
 

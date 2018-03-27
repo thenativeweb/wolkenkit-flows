@@ -1,147 +1,98 @@
 'use strict';
 
-const EventHandler = function (options) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.app) {
-    throw new Error('App is missing.');
-  }
-
-  const { app } = options;
-
-  this.logger = app.services.getLogger();
-};
-
-EventHandler.prototype.forStatelessFlow = function (options, callback) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.flow) {
-    throw new Error('Flow is missing.');
-  }
-  if (!options.domainEvent) {
-    throw new Error('Domain event is missing.');
-  }
-  if (!options.services) {
-    throw new Error('Services are missing.');
-  }
-  if (!callback) {
-    throw new Error('Callback is missing.');
-  }
-
-  const { flow, domainEvent, services } = options;
-
-  const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`;
-  const eventListener = flow.when[eventName];
-
-  const that = this;
-  const mark = {
-    asDone () {
-      process.nextTick(() => callback(null));
-    },
-    asFailed (reason) {
-      const err = new Error(reason);
-
-      that.logger.error('Failed to run reaction.', { err });
-      process.nextTick(() => callback(null));
+class EventHandler {
+  constructor ({ app }) {
+    if (!app) {
+      throw new Error('App is missing.');
     }
-  };
 
-  try {
-    if (eventListener.length === 3) {
-      eventListener(domainEvent, services, mark);
-    } else {
-      eventListener(domainEvent, mark);
+    this.logger = app.services.getLogger();
+  }
+
+  async forStatelessFlow ({ flow, domainEvent, services }) {
+    if (!flow) {
+      throw new Error('Flow is missing.');
     }
-  } catch (ex) {
-    this.logger.error('Failed to run reaction.', { err: ex });
-    process.nextTick(() => callback(null));
-  }
-};
+    if (!domainEvent) {
+      throw new Error('Domain event is missing.');
+    }
+    if (!services) {
+      throw new Error('Services are missing.');
+    }
 
-EventHandler.prototype.forStatefulFlow = function (options, callback) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.flowAggregate) {
-    throw new Error('Flow aggregate is missing.');
-  }
-  if (!options.domainEvent) {
-    throw new Error('Domain event is missing.');
-  }
-  if (!options.services) {
-    throw new Error('Services are missing.');
-  }
-  if (!callback) {
-    throw new Error('Callback is missing.');
+    const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`;
+    const eventListener = flow.when[eventName];
+
+    domainEvent.fail = reason => {
+      this.logger.error('Failed to run reaction.', { reason });
+    };
+
+    try {
+      await eventListener(domainEvent, services);
+    } catch (ex) {
+      this.logger.error('Failed to run reaction.', { ex });
+    }
   }
 
-  const { flowAggregate, domainEvent, services } = options;
+  async forStatefulFlow ({ flowAggregate, domainEvent, services }) {
+    if (!flowAggregate) {
+      throw new Error('Flow aggregate is missing.');
+    }
+    if (!domainEvent) {
+      throw new Error('Domain event is missing.');
+    }
+    if (!services) {
+      throw new Error('Services are missing.');
+    }
 
-  const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
-        previousFlowStateName = flowAggregate.api.forTransitions.state.is;
+    const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
+          previousFlowStateName = flowAggregate.api.forTransitions.state.is;
 
-  const transitionsForPreviousFlowState = flowAggregate.definition.transitions[previousFlowStateName];
+    const transitionsForPreviousFlowState = flowAggregate.definition.transitions[previousFlowStateName];
 
-  if (!transitionsForPreviousFlowState) {
-    return process.nextTick(() => callback(null));
-  }
+    if (!transitionsForPreviousFlowState) {
+      return;
+    }
 
-  const transition = transitionsForPreviousFlowState[eventName];
+    const transition = transitionsForPreviousFlowState[eventName];
 
-  if (!transition) {
-    return process.nextTick(() => callback(null));
-  }
+    if (!transition) {
+      return;
+    }
 
-  try {
-    transition(flowAggregate.api.forTransitions, domainEvent);
-  } catch (ex) {
-    flowAggregate.api.forTransitions.setState({
-      is: 'failed'
+    try {
+      transition(flowAggregate.api.forTransitions, domainEvent);
+    } catch (ex) {
+      flowAggregate.api.forTransitions.setState({ is: 'failed' });
+    }
+
+    flowAggregate.instance.events.publish('transitioned', {
+      state: flowAggregate.api.forTransitions.state
     });
-  }
 
-  flowAggregate.instance.events.publish('transitioned', {
-    state: flowAggregate.api.forTransitions.state
-  });
+    const nextFlowStateName = flowAggregate.api.forTransitions.state.is;
+    const whensForPreviousFlowState = flowAggregate.definition.when[previousFlowStateName];
 
-  const nextFlowStateName = flowAggregate.api.forTransitions.state.is;
-  const whensForPreviousFlowState = flowAggregate.definition.when[previousFlowStateName];
-
-  if (!whensForPreviousFlowState) {
-    return process.nextTick(() => callback(null));
-  }
-
-  const when = whensForPreviousFlowState[nextFlowStateName];
-
-  if (!when) {
-    return process.nextTick(() => callback(null));
-  }
-
-  const that = this;
-  const mark = {
-    asDone () {
-      process.nextTick(() => callback(null));
-    },
-    asFailed (reason) {
-      const err = new Error(reason);
-
-      that.logger.error('Failed to run reaction.', { err });
-      process.nextTick(() => callback(null));
+    if (!whensForPreviousFlowState) {
+      return;
     }
-  };
 
-  try {
-    if (when.length === 4) {
-      when(flowAggregate.api.forWhen, domainEvent, services, mark);
-    } else {
-      when(flowAggregate.api.forWhen, domainEvent, mark);
+    const when = whensForPreviousFlowState[nextFlowStateName];
+
+    if (!when) {
+      return;
     }
-  } catch (ex) {
-    this.logger.error('Failed to run reaction.', { err: ex });
-    process.nextTick(() => callback(null));
+
+    domainEvent.fail = reason => {
+      this.logger.error('Failed to run reaction.', { reason });
+    };
+
+    try {
+      await when(flowAggregate.api.forWhen, domainEvent, services);
+    } catch (ex) {
+      this.logger.error('Failed to run reaction.', { ex });
+    }
   }
-};
+}
 
 module.exports = EventHandler;

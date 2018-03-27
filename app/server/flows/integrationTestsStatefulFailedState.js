@@ -20,16 +20,18 @@ const transitions = {
 
 const when = {
   pristine: {
-    failed (flow, event, mark) {
-      needle.get(`http://localhost:3000/notify`, (err, res) => {
-        if (err) {
-          return mark.asFailed(err.message);
-        }
-        if (res.statusCode !== 200) {
-          return mark.asFailed('Unexpected status code.');
-        }
-        mark.asDone();
-      });
+    async failed (flow, event) {
+      let res;
+
+      try {
+        res = await needle.get(`http://localhost:3000/notify`);
+      } catch (ex) {
+        return event.fail(ex.message);
+      }
+
+      if (res.statusCode !== 200) {
+        return event.fail('Unexpected status code.');
+      }
     }
   }
 };

@@ -3,22 +3,24 @@
 const needle = require('needle');
 
 const when = {
-  'integrationTests.stateless.doesNothing' (event, mark) {
-    mark.asDone();
+  'integrationTests.stateless.doesNothing' () {
+    // Intentionally left blank.
   },
 
-  'integrationTests.stateless.callExternalService' (event, mark) {
+  async 'integrationTests.stateless.callExternalService' (event) {
     const { port } = event.data;
 
-    needle.get(`http://localhost:${port}/notify`, (err, res) => {
-      if (err) {
-        return mark.asFailed(err.message);
-      }
-      if (res.statusCode !== 200) {
-        return mark.asFailed('Unexpected status code.');
-      }
-      mark.asDone();
-    });
+    let res;
+
+    try {
+      res = await needle.get(`http://localhost:${port}/notify`);
+    } catch (ex) {
+      return event.fail(ex.message);
+    }
+
+    if (res.statusCode !== 200) {
+      return event.fail('Unexpected status code.');
+    }
   }
 };
 

@@ -5,8 +5,8 @@ const when = {
     throw new Error('Something, somewhere, went horribly wrong.');
   },
 
-  'integrationTests.stateless.markAsFailed' (event, mark) {
-    mark.asFailed('Something, somewhere, went horribly wrong.');
+  'integrationTests.stateless.markAsFailed' (event) {
+    event.fail('Something, somewhere, went horribly wrong.');
   }
 };
 

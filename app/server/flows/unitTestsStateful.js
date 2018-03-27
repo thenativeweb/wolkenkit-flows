@@ -18,8 +18,8 @@ const transitions = {
 
 const when = {
   pristine: {
-    completed (flow, event, mark) {
-      mark.asDone();
+    completed () {
+      // Intentionally left blank.
     }
   }
 };

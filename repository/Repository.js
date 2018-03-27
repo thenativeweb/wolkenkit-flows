@@ -2,66 +2,46 @@
 
 const FlowAggregate = require('./FlowAggregate');
 
-const Repository = function () {
-  // Initialization is done by the initialize function.
-};
-
-Repository.prototype.initialize = function (options, callback) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.app) {
-    throw new Error('App is missing.');
-  }
-  if (!options.flows) {
-    throw new Error('Flows are missing.');
-  }
-  if (!options.eventStore) {
-    throw new Error('Event store is missing.');
-  }
-  if (!callback) {
-    throw new Error('Callback is missing.');
-  }
-
-  this.app = options.app;
-  this.logger = options.app.services.getLogger();
-  this.flows = options.flows;
-  this.eventStore = options.eventStore;
-
-  callback(null);
-};
-
-Repository.prototype.loadAggregateForDomainEvent = function (options, callback) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.aggregate) {
-    throw new Error('Aggregate is missing.');
-  }
-  if (!options.aggregate.name) {
-    throw new Error('Aggregate name is missing.');
-  }
-  if (!options.aggregate.id) {
-    throw new Error('Aggregate id is missing.');
-  }
-  if (!options.domainEvent) {
-    throw new Error('Domain event is missing.');
-  }
-  if (!callback) {
-    throw new Error('Callback is missing.');
-  }
-
-  const flowAggregate = new FlowAggregate({
-    app: this.app,
-    flows: this.flows,
-    aggregate: options.aggregate,
-    domainEvent: options.domainEvent
-  });
-
-  this.eventStore.getLastEvent(flowAggregate.instance.id, (err, event) => {
-    if (err) {
-      return callback(err);
+class Repository {
+  initialize ({ app, flows, eventStore }) {
+    if (!app) {
+      throw new Error('App is missing.');
     }
+    if (!flows) {
+      throw new Error('Flows are missing.');
+    }
+    if (!eventStore) {
+      throw new Error('Event store is missing.');
+    }
+
+    this.app = app;
+    this.logger = app.services.getLogger();
+    this.flows = flows;
+    this.eventStore = eventStore;
+  }
+
+  async loadAggregateForDomainEvent ({ aggregate, domainEvent }) {
+    if (!aggregate) {
+      throw new Error('Aggregate is missing.');
+    }
+    if (!aggregate.name) {
+      throw new Error('Aggregate name is missing.');
+    }
+    if (!aggregate.id) {
+      throw new Error('Aggregate id is missing.');
+    }
+    if (!domainEvent) {
+      throw new Error('Domain event is missing.');
+    }
+
+    const flowAggregate = new FlowAggregate({
+      app: this.app,
+      flows: this.flows,
+      aggregate,
+      domainEvent
+    });
+
+    const event = await this.eventStore.getLastEvent(flowAggregate.instance.id);
 
     if (event) {
       flowAggregate.api.forTransitions.state = event.data.state;
@@ -69,30 +49,22 @@ Repository.prototype.loadAggregateForDomainEvent = function (options, callback) 
       flowAggregate.instance.revision = event.metadata.revision;
     }
 
-    callback(null, flowAggregate);
-  });
-};
-
-Repository.prototype.saveAggregate = function (aggregate, callback) {
-  if (!aggregate) {
-    throw new Error('Aggregate is missing.');
-  }
-  if (!callback) {
-    throw new Error('Callback is missing.');
+    return flowAggregate;
   }
 
-  if (aggregate.instance.uncommittedEvents.length === 0) {
-    return process.nextTick(() => callback(null));
-  }
-
-  this.eventStore.saveEvents({
-    events: aggregate.instance.uncommittedEvents
-  }, err => {
-    if (err) {
-      return callback(err);
+  async saveAggregate ({ aggregate }) {
+    if (!aggregate) {
+      throw new Error('Aggregate is missing.');
     }
-    callback(null);
-  });
-};
+
+    if (aggregate.instance.uncommittedEvents.length === 0) {
+      return;
+    }
+
+    await this.eventStore.saveEvents({
+      events: aggregate.instance.uncommittedEvents
+    });
+  }
+}
 
 module.exports = Repository;

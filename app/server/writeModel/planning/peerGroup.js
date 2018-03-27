@@ -6,11 +6,11 @@ const initialState = {
 
 const commands = {
   /* eslint-disable no-unused-vars */
-  start (peerGroup, command, mark) {
+  async start (peerGroup, command) {
     // ...
   },
 
-  join (peerGroup, command, mark) {
+  async join (peerGroup, command) {
     // ...
   }
   /* eslint-enable no-unused-vars */
