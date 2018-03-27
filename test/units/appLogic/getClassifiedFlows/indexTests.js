@@ -5,19 +5,17 @@ const assert = require('assertthat');
 const getClassifiedFlows = require('../../../../appLogic/getClassifiedFlows');
 
 suite('getClassifiedFlows', () => {
-  test('is a function.', done => {
+  test('is a function.', async () => {
     assert.that(getClassifiedFlows).is.ofType('function');
-    done();
   });
 
-  test('throws an error if flows are missing.', done => {
+  test('throws an error if flows are missing.', async () => {
     assert.that(() => {
       getClassifiedFlows();
     }).is.throwing('Flows are missing.');
-    done();
   });
 
-  test('classifies flows.', done => {
+  test('classifies flows.', async () => {
     const flowStateful = {
       identity: {},
       initialState: {},
@@ -49,11 +47,9 @@ suite('getClassifiedFlows', () => {
         'planning.peerGroup.joined': [ flowStateless ]
       }
     });
-
-    done();
   });
 
-  test('ignores missing stateful flows.', done => {
+  test('ignores missing stateful flows.', async () => {
     const flowStateless = {
       when: {
         'planning.peerGroup.joined' () {}
@@ -68,11 +64,9 @@ suite('getClassifiedFlows', () => {
         'planning.peerGroup.joined': [ flowStateless ]
       }
     });
-
-    done();
   });
 
-  test('ignores missing stateless flows.', done => {
+  test('ignores missing stateless flows.', async () => {
     const flowStateful = {
       identity: {},
       initialState: {},
@@ -96,11 +90,9 @@ suite('getClassifiedFlows', () => {
       },
       stateless: {}
     });
-
-    done();
   });
 
-  test('throws an error if an unknown flow type is given.', done => {
+  test('throws an error if an unknown flow type is given.', async () => {
     const flowUnknown = {
       whatever: {}
     };
@@ -108,7 +100,5 @@ suite('getClassifiedFlows', () => {
     assert.that(() => {
       getClassifiedFlows({ flowUnknown });
     }).is.throwing('Unknown flow type.');
-
-    done();
   });
 });

@@ -2,7 +2,10 @@
 
 const uuid = require('uuidv4');
 
-const getApp = function ({ domainEvent, unpublishedCommands, writeModel }) {
+const getApp = function ({ app, domainEvent, unpublishedCommands, writeModel }) {
+  if (!app) {
+    throw new Error('App is missing.');
+  }
   if (!domainEvent) {
     throw new Error('Domain event is missing.');
   }
@@ -13,13 +16,13 @@ const getApp = function ({ domainEvent, unpublishedCommands, writeModel }) {
     throw new Error('Write model is missing.');
   }
 
-  const app = {};
+  const api = {};
 
   Object.keys(writeModel).forEach(contextName => {
-    app[contextName] = {};
+    api[contextName] = {};
 
     Object.keys(writeModel[contextName]).forEach(aggregateName => {
-      app[contextName][aggregateName] = function (aggregateId) {
+      api[contextName][aggregateName] = function (aggregateId) {
         const commands = {};
 
         Object.keys(writeModel[contextName][aggregateName].commands).forEach(commandName => {
@@ -51,7 +54,7 @@ const getApp = function ({ domainEvent, unpublishedCommands, writeModel }) {
     });
   });
 
-  return app;
+  return api;
 };
 
 module.exports = getApp;

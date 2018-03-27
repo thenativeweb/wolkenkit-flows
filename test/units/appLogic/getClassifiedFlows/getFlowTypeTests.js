@@ -5,26 +5,23 @@ const assert = require('assertthat');
 const getFlowType = require('../../../../appLogic/getClassifiedFlows/getFlowType');
 
 suite('getFlowType', () => {
-  test('is a function.', done => {
+  test('is a function.', async () => {
     assert.that(getFlowType).is.ofType('function');
-    done();
   });
 
-  test('throws an error if flow is missing.', done => {
+  test('throws an error if flow is missing.', async () => {
     assert.that(() => {
       getFlowType();
     }).is.throwing('Flow is missing.');
-    done();
   });
 
-  test('classifies stateless flows.', done => {
+  test('classifies stateless flows.', async () => {
     assert.that(getFlowType({
       when: {}
     })).is.equalTo('stateless');
-    done();
   });
 
-  test('classifies stateful flows.', done => {
+  test('classifies stateful flows.', async () => {
     assert.that(getFlowType({
       identity: () => {
         // Intentionally left blank.
@@ -33,16 +30,14 @@ suite('getFlowType', () => {
       transitions: {},
       when: {}
     })).is.equalTo('stateful');
-    done();
   });
 
-  test('throws an error if an unknown flow is given.', done => {
+  test('throws an error if an unknown flow is given.', async () => {
     assert.that(() => {
       getFlowType({
         transitions: {},
         when: {}
       });
     }).is.throwing('Unknown flow type.');
-    done();
   });
 });

@@ -48,8 +48,8 @@ const appLogic = function ({ app, eventStore, flows, writeModel }) {
 
     try {
       await Promise.all([
-        runStatefulFlows({ eventHandler, flows: statefulFlows, domainEvent }),
-        runStatelessFlows({ eventHandler, flows: statelessFlows, domainEvent })
+        runStatefulFlows({ eventHandler, flows: statefulFlows, domainEvent, unpublishedCommands }),
+        runStatelessFlows({ eventHandler, flows: statelessFlows, domainEvent, unpublishedCommands })
       ]);
     } catch (ex) {
       logger.error('Failed to handle event.', { domainEvent, ex });

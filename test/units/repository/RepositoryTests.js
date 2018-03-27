@@ -2,8 +2,8 @@
 
 const path = require('path');
 
-const _ = require('lodash'),
-      assert = require('assertthat'),
+const assert = require('assertthat'),
+      cloneDeep = require('lodash/cloneDeep'),
       EventStore = require('sparbuch/lib/postgres/Sparbuch'),
       runfork = require('runfork'),
       tailwind = require('tailwind'),
@@ -23,44 +23,41 @@ const { flows } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..'
 suite('Repository', () => {
   const eventStore = new EventStore();
 
-  suiteSetup(done => {
-    eventStore.initialize({
+  suiteSetup(async () => {
+    await eventStore.initialize({
       url: env.POSTGRES_URL_UNITS,
       namespace: 'testflows'
-    }, done);
+    });
   });
 
-  suiteTeardown(() => {
-    // We don't explicitly run eventStore.destroy() here, because it caused
-    // strange problems on CircleCI. The tests hang in the teardown function.
-    // This can be tracked down to disposing and destroying the internal pool
-    // of knex, which is provided by pool2. We don't have an idea WHY it works
-    // this way, but apparently it does.
+  suiteTeardown(async () => {
+    await eventStore.destroy();
   });
 
-  setup(done => {
-    runfork({
-      path: path.join(__dirname, '..', '..', 'helpers', 'runResetPostgres.js'),
-      env: {
-        NAMESPACE: 'testflows',
-        URL: env.POSTGRES_URL_UNITS
-      },
-      onExit (exitCode) {
-        if (exitCode > 0) {
-          return done(new Error('Failed to reset PostgreSQL.'));
-        }
-        done(null);
-      }
-    }, err => {
-      if (err) {
-        return done(err);
+  setup(async () => {
+    await new Promise(async (resolve, reject) => {
+      try {
+        runfork({
+          path: path.join(__dirname, '..', '..', 'helpers', 'runResetPostgres.js'),
+          env: {
+            NAMESPACE: 'testflows',
+            URL: env.POSTGRES_URL_UNITS
+          },
+          onExit (exitCode) {
+            if (exitCode > 0) {
+              return reject(new Error('Failed to reset PostgreSQL.'));
+            }
+            resolve();
+          }
+        });
+      } catch (ex) {
+        reject(ex);
       }
     });
   });
 
-  test('is a function.', done => {
+  test('is a function.', async () => {
     assert.that(Repository).is.ofType('function');
-    done();
   });
 
   suite('instance', () => {
@@ -82,238 +79,148 @@ suite('Repository', () => {
     });
 
     suite('initialize', () => {
-      test('is a function.', done => {
+      test('is a function.', async () => {
         assert.that(repository.initialize).is.ofType('function');
-        done();
       });
 
-      test('throws an error if options are missing.', done => {
-        assert.that(() => {
-          repository.initialize();
-        }).is.throwing('Options are missing.');
-        done();
-      });
-
-      test('throws an error if app is missing.', done => {
+      test('throws an error if app is missing.', async () => {
         assert.that(() => {
           repository.initialize({});
         }).is.throwing('App is missing.');
-        done();
       });
 
-      test('throws an error if flows are missing.', done => {
+      test('throws an error if flows are missing.', async () => {
         assert.that(() => {
           repository.initialize({ app });
         }).is.throwing('Flows are missing.');
-        done();
       });
 
-      test('throws an error if event store is missing.', done => {
+      test('throws an error if event store is missing.', async () => {
         assert.that(() => {
           repository.initialize({ app, flows });
         }).is.throwing('Event store is missing.');
-        done();
-      });
-
-      test('throws an error if callback is missing.', done => {
-        assert.that(() => {
-          repository.initialize({ app, flows, eventStore });
-        }).is.throwing('Callback is missing.');
-        done();
-      });
-
-      test('calls the callback.', done => {
-        repository.initialize({ app, flows, eventStore }, err => {
-          assert.that(err).is.null();
-          done();
-        });
       });
     });
 
     suite('loadAggregateForDomainEvent', () => {
-      test('is a function.', done => {
+      test('is a function.', async () => {
         assert.that(repository.loadAggregateForDomainEvent).is.ofType('function');
-        done();
       });
 
-      test('throws an error if options are missing.', done => {
-        assert.that(() => {
-          repository.loadAggregateForDomainEvent();
-        }).is.throwing('Options are missing.');
-        done();
+      test('throws an error if aggregate is missing.', async () => {
+        await assert.that(async () => {
+          await repository.loadAggregateForDomainEvent({});
+        }).is.throwingAsync('Aggregate is missing.');
       });
 
-      test('throws an error if aggregate is missing.', done => {
-        assert.that(() => {
-          repository.loadAggregateForDomainEvent({});
-        }).is.throwing('Aggregate is missing.');
-        done();
+      test('throws an error if aggregate name is missing.', async () => {
+        await assert.that(async () => {
+          await repository.loadAggregateForDomainEvent({ aggregate: {}});
+        }).is.throwingAsync('Aggregate name is missing.');
       });
 
-      test('throws an error if aggregate name is missing.', done => {
-        assert.that(() => {
-          repository.loadAggregateForDomainEvent({ aggregate: {}});
-        }).is.throwing('Aggregate name is missing.');
-        done();
+      test('throws an error if aggregate id is missing.', async () => {
+        await assert.that(async () => {
+          await repository.loadAggregateForDomainEvent({ aggregate: { name: 'unitTestsStateful' }});
+        }).is.throwingAsync('Aggregate id is missing.');
       });
 
-      test('throws an error if aggregate id is missing.', done => {
-        assert.that(() => {
-          repository.loadAggregateForDomainEvent({ aggregate: { name: 'unitTestsStateful' }});
-        }).is.throwing('Aggregate id is missing.');
-        done();
+      test('throws an error if domain event is missing.', async () => {
+        await assert.that(async () => {
+          await repository.loadAggregateForDomainEvent({ aggregate: { name: 'unitTestsStateful', id: flowId }});
+        }).is.throwingAsync('Domain event is missing.');
       });
 
-      test('throws an error if domain event is missing.', done => {
-        assert.that(() => {
-          repository.loadAggregateForDomainEvent({ aggregate: { name: 'unitTestsStateful', id: flowId }});
-        }).is.throwing('Domain event is missing.');
-        done();
-      });
+      test('returns the aggregate as-is if no events have been saved.', async () => {
+        repository.initialize({ app, flows, eventStore });
 
-      test('throws an error if callback is missing.', done => {
-        assert.that(() => {
-          repository.loadAggregateForDomainEvent({
-            aggregate: { name: 'unitTestsStateful', id: flowId },
-            domainEvent
-          });
-        }).is.throwing('Callback is missing.');
-        done();
-      });
+        const oldState = cloneDeep(flowAggregate.api.forTransitions.state);
 
-      test('returns the aggregate as-is if no events have been saved.', done => {
-        repository.initialize({ app, flows, eventStore }, errInitialize => {
-          assert.that(errInitialize).is.null();
-
-          const oldState = _.cloneDeep(flowAggregate.api.forTransitions.state);
-
-          repository.loadAggregateForDomainEvent({
-            aggregate: { name: 'unitTestsStateful', id: flowId },
-            domainEvent
-          }, (err, flowAggregateReplayed) => {
-            assert.that(err).is.null();
-            assert.that(flowAggregateReplayed.api.forTransitions.state).is.equalTo(oldState);
-            done();
-          });
+        const flowAggregateReplayed = await repository.loadAggregateForDomainEvent({
+          aggregate: { name: 'unitTestsStateful', id: flowId },
+          domainEvent
         });
+
+        assert.that(flowAggregateReplayed.api.forTransitions.state).is.equalTo(oldState);
       });
 
-      test('applies the last previously saved event.', done => {
-        repository.initialize({ app, flows, eventStore }, errInitialize => {
-          assert.that(errInitialize).is.null();
+      test('applies the last previously saved event.', async () => {
+        repository.initialize({ app, flows, eventStore });
 
-          const waiting = buildEvent('flows', 'unitTestsStateful', flowId, 'transitioned', { state: { is: 'waiting', port: 3000 }});
-          const completed = buildEvent('flows', 'unitTestsStateful', flowId, 'transitioned', { state: { is: 'completed' }});
+        const waiting = buildEvent('flows', 'unitTestsStateful', flowId, 'transitioned', { state: { is: 'waiting', port: 3000 }});
+        const completed = buildEvent('flows', 'unitTestsStateful', flowId, 'transitioned', { state: { is: 'completed' }});
 
-          waiting.metadata.revision = 1;
-          completed.metadata.revision = 2;
+        waiting.metadata.revision = 1;
+        completed.metadata.revision = 2;
 
-          eventStore.saveEvents({
-            events: [ waiting, completed ]
-          }, errSaveEvents => {
-            assert.that(errSaveEvents).is.null();
+        await eventStore.saveEvents({ events: [ waiting, completed ]});
 
-            repository.loadAggregateForDomainEvent({
-              aggregate: { name: 'unitTestsStateful', id: flowId },
-              domainEvent
-            }, (errLoadAggregate, flowAggregateReplayed) => {
-              assert.that(errLoadAggregate).is.null();
-              assert.that(flowAggregateReplayed.api.forTransitions.state.is).is.equalTo('completed');
-              assert.that(flowAggregateReplayed.api.forTransitions.state.port).is.undefined();
-              done();
-            });
-          });
+        const flowAggregateReplayed = await repository.loadAggregateForDomainEvent({
+          aggregate: { name: 'unitTestsStateful', id: flowId },
+          domainEvent
         });
+
+        assert.that(flowAggregateReplayed.api.forTransitions.state.is).is.equalTo('completed');
+        assert.that(flowAggregateReplayed.api.forTransitions.state.port).is.undefined();
       });
     });
 
     suite('saveAggregate', () => {
-      test('is a function.', done => {
+      test('is a function.', async () => {
         assert.that(repository.saveAggregate).is.ofType('function');
-        done();
       });
 
-      test('throws an error if aggregate is missing.', done => {
-        assert.that(() => {
-          repository.saveAggregate();
-        }).is.throwing('Aggregate is missing.');
-        done();
+      test('throws an error if aggregate is missing.', async () => {
+        await assert.that(async () => {
+          await repository.saveAggregate({});
+        }).is.throwingAsync('Aggregate is missing.');
       });
 
-      test('throws an error if callback is missing.', done => {
-        assert.that(() => {
-          repository.saveAggregate(flowAggregate);
-        }).is.throwing('Callback is missing.');
-        done();
+      test('does nothing when there are no uncommitted events.', async () => {
+        repository.initialize({ app, flows, eventStore });
+
+        await repository.saveAggregate({ aggregate: flowAggregate });
+
+        const eventStream = await eventStore.getEventStream(flowId);
+        const events = await toArray(eventStream);
+
+        assert.that(events.length).is.equalTo(0);
       });
 
-      test('does nothing when there are no uncommitted events.', done => {
-        repository.initialize({ app, flows, eventStore }, errInitialize => {
-          assert.that(errInitialize).is.null();
-
-          repository.saveAggregate(flowAggregate, errSaveAggregate => {
-            assert.that(errSaveAggregate).is.null();
-
-            eventStore.getEventStream(flowId, (errGetEventStream, eventStream) => {
-              assert.that(errGetEventStream).is.null();
-
-              toArray(eventStream, (errToArray, events) => {
-                assert.that(errToArray).is.null();
-                assert.that(events.length).is.equalTo(0);
-                done();
-              });
-            });
-          });
-        });
-      });
-
-      test('saves the uncommitted events using the event store.', done => {
+      test('saves the uncommitted events using the event store.', async () => {
         flowAggregate.instance.events.publish('transitioned', { state: { is: 'waiting' }});
         flowAggregate.instance.events.publish('transitioned', { state: { is: 'completed' }});
 
-        repository.initialize({ app, flows, eventStore }, errInitialize => {
-          assert.that(errInitialize).is.null();
+        repository.initialize({ app, flows, eventStore });
 
-          repository.saveAggregate(flowAggregate, errSaveAggregate => {
-            assert.that(errSaveAggregate).is.null();
+        await repository.saveAggregate({ aggregate: flowAggregate });
 
-            eventStore.getEventStream(flowId, (errGetEventStream, eventStream) => {
-              assert.that(errGetEventStream).is.null();
+        const eventStream = await eventStore.getEventStream(flowId);
+        const events = await toArray(eventStream);
 
-              toArray(eventStream, (errToArray, events) => {
-                assert.that(errToArray).is.null();
-                assert.that(events.length).is.equalTo(2);
-                assert.that(events[0].name).is.equalTo('transitioned');
-                assert.that(events[0].data).is.equalTo({ state: { is: 'waiting' }});
-                assert.that(events[1].name).is.equalTo('transitioned');
-                assert.that(events[1].data).is.equalTo({ state: { is: 'completed' }});
-                done();
-              });
-            });
-          });
-        });
+        assert.that(events.length).is.equalTo(2);
+        assert.that(events[0].name).is.equalTo('transitioned');
+        assert.that(events[0].data).is.equalTo({ state: { is: 'waiting' }});
+        assert.that(events[1].name).is.equalTo('transitioned');
+        assert.that(events[1].data).is.equalTo({ state: { is: 'completed' }});
       });
 
-      test('returns an error if the events could not be saved by the event store.', done => {
+      test('throws an error if the events could not be saved by the event store.', async () => {
         flowAggregate.instance.events.publish('transitioned', {
           state: { is: 'completed' }
         });
 
         const eventStoreMock = {
-          saveEvents (options, callback) {
-            callback(new Error('Something went wrong.'));
+          async saveEvents () {
+            throw new Error('Something went wrong.');
           }
         };
 
-        repository.initialize({ app, flows, eventStore: eventStoreMock }, errInitialize => {
-          assert.that(errInitialize).is.null();
+        repository.initialize({ app, flows, eventStore: eventStoreMock });
 
-          repository.saveAggregate(flowAggregate, errSaveAggregate => {
-            assert.that(errSaveAggregate).is.not.null();
-            assert.that(errSaveAggregate.message).is.equalTo('Something went wrong.');
-            done();
-          });
-        });
+        await assert.that(async () => {
+          await repository.saveAggregate({ aggregate: flowAggregate });
+        }).is.throwingAsync('Something went wrong.');
       });
     });
   });

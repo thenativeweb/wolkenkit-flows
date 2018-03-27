@@ -3,20 +3,29 @@
 const getServices = require('./services/get');
 
 class EventHandler {
-  constructor ({ app }) {
+  constructor ({ app, writeModel }) {
     if (!app) {
       throw new Error('App is missing.');
     }
+    if (!writeModel) {
+      throw new Error('Write model is missing.');
+    }
+
+    this.app = app;
+    this.writeModel = writeModel;
 
     this.logger = app.services.getLogger();
   }
 
-  async forStatelessFlow ({ flow, domainEvent }) {
+  async forStatelessFlow ({ flow, domainEvent, unpublishedCommands }) {
     if (!flow) {
       throw new Error('Flow is missing.');
     }
     if (!domainEvent) {
       throw new Error('Domain event is missing.');
+    }
+    if (!unpublishedCommands) {
+      throw new Error('Unpublished commands are missing.');
     }
 
     const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`;
@@ -26,8 +35,8 @@ class EventHandler {
       this.logger.error('Failed to run reaction.', { reason });
     };
 
-    const { app, writeModel, repository } = this;
-    const services = getServices({ app, flow, repository, writeModel });
+    const { app, writeModel } = this;
+    const services = getServices({ app, domainEvent, flow, unpublishedCommands, writeModel });
 
     try {
       await eventListener(domainEvent, services);
@@ -36,7 +45,7 @@ class EventHandler {
     }
   }
 
-  async forStatefulFlow ({ flow, flowAggregate, domainEvent }) {
+  async forStatefulFlow ({ flow, flowAggregate, domainEvent, unpublishedCommands }) {
     if (!flow) {
       throw new Error('Flow is missing.');
     }
@@ -45,6 +54,9 @@ class EventHandler {
     }
     if (!domainEvent) {
       throw new Error('Domain event is missing.');
+    }
+    if (!unpublishedCommands) {
+      throw new Error('Unpublished commands are missing.');
     }
 
     const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
@@ -62,8 +74,8 @@ class EventHandler {
       return;
     }
 
-    const { app, writeModel, repository } = this;
-    const services = getServices({ app, flow, repository, writeModel });
+    const { app, writeModel } = this;
+    const services = getServices({ app, flow, domainEvent, unpublishedCommands, writeModel });
 
     try {
       transition(flowAggregate.api.forTransitions, domainEvent);

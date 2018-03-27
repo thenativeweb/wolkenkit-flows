@@ -5,7 +5,7 @@ const map = require('lodash/map'),
 
 const workflow = requireDir(__dirname);
 
-const runStatelessFlows = async function ({ eventHandler, flows, domainEvent }) {
+const runStatelessFlows = async function ({ eventHandler, flows, domainEvent, unpublishedCommands }) {
   if (!eventHandler) {
     throw new Error('Event handler is missing.');
   }
@@ -15,11 +15,14 @@ const runStatelessFlows = async function ({ eventHandler, flows, domainEvent }) 
   if (!domainEvent) {
     throw new Error('Domain event is missing.');
   }
+  if (!unpublishedCommands) {
+    throw new Error('Unpublished commands are missing.');
+  }
 
   await Promise.all(map(flows, async (flow, flowName) => {
     flow.name = flowName;
 
-    await workflow.handleEvent({ eventHandler, flow, domainEvent });
+    await workflow.handleEvent({ eventHandler, flow, domainEvent, unpublishedCommands });
   }));
 };
 

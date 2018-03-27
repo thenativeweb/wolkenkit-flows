@@ -10,56 +10,31 @@ const assert = require('assertthat'),
 
 const buildEvent = require('../../helpers/buildEvent'),
       EventHandler = require('../../../EventHandler'),
-      FlowAggregate = require('../../../repository/FlowAggregate'),
-      getServices = require('../../../EventHandler/services/get');
+      FlowAggregate = require('../../../repository/FlowAggregate');
 
 const app = tailwind.createApp({});
 
 const { flows, writeModel } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', 'app'));
 
-const buildServices = function (options) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.domainEvent) {
-    throw new Error('Domain event is missing.');
-  }
-  if (!options.unpublishedCommands) {
-    throw new Error('Unpublished commands are missing.');
-  }
-
-  const { domainEvent, unpublishedCommands } = options;
-
-  return getServices({
-    app,
-    domainEvent,
-    unpublishedCommands,
-    writeModel
-  });
-};
-
 suite('EventHandler', () => {
-  test('is a function.', done => {
+  test('is a function.', async () => {
     assert.that(EventHandler).is.ofType('function');
-    done();
   });
 
-  test('throws an error if options are missing.', done => {
-    assert.that(() => {
-      /* eslint-disable no-new */
-      new EventHandler();
-      /* eslint-enable no-new */
-    }).is.throwing('Options are missing.');
-    done();
-  });
-
-  test('throws an error if app is missing.', done => {
+  test('throws an error if app is missing.', async () => {
     assert.that(() => {
       /* eslint-disable no-new */
       new EventHandler({});
       /* eslint-enable no-new */
     }).is.throwing('App is missing.');
-    done();
+  });
+
+  test('throws an error if write model is missing.', async () => {
+    assert.that(() => {
+      /* eslint-disable no-new */
+      new EventHandler({ app });
+      /* eslint-enable no-new */
+    }).is.throwing('Write model is missing.');
   });
 
   suite('forStatelessFlow', () => {
@@ -67,87 +42,54 @@ suite('EventHandler', () => {
         unpublishedCommands;
 
     setup(() => {
-      eventHandler = new EventHandler({ app });
+      eventHandler = new EventHandler({ app, writeModel });
       unpublishedCommands = [];
     });
 
-    test('is a function.', done => {
+    test('is a function.', async () => {
       assert.that(eventHandler.forStatelessFlow).is.ofType('function');
-      done();
     });
 
-    test('throws an error if options are missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatelessFlow();
-      }).is.throwing('Options are missing.');
-      done();
+    test('throws an error if flow is missing.', async () => {
+      await assert.that(async () => {
+        await eventHandler.forStatelessFlow({});
+      }).is.throwingAsync('Flow is missing.');
     });
 
-    test('throws an error if flow is missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatelessFlow({});
-      }).is.throwing('Flow is missing.');
-      done();
+    test('throws an error if domain event is missing.', async () => {
+      await assert.that(async () => {
+        await eventHandler.forStatelessFlow({ flow: {}});
+      }).is.throwingAsync('Domain event is missing.');
     });
 
-    test('throws an error if domain event is missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatelessFlow({ flow: {}});
-      }).is.throwing('Domain event is missing.');
-      done();
+    test('throws an error if unpublished commands are missing.', async () => {
+      await assert.that(async () => {
+        await eventHandler.forStatelessFlow({ flow: {}, domainEvent: {}});
+      }).is.throwingAsync('Unpublished commands are missing.');
     });
 
-    test('throws an error if services are missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatelessFlow({ flow: {}, domainEvent: {}});
-      }).is.throwing('Services are missing.');
-      done();
-    });
-
-    test('throws an error if callback is missing.', done => {
-      const domainEvent = {};
-      const services = buildServices({ domainEvent, unpublishedCommands });
-
-      assert.that(() => {
-        eventHandler.forStatelessFlow({ flow: {}, domainEvent, services });
-      }).is.throwing('Callback is missing.');
-      done();
-    });
-
-    test('handles events.', done => {
+    test('handles events.', async () => {
       const domainEvent = buildEvent('unitTests', 'stateless', 'doesNothing', {}),
-            flow = flows.unitTestsStateless,
-            services = buildServices({ domainEvent, unpublishedCommands });
+            flow = flows.unitTestsStateless;
 
-      eventHandler.forStatelessFlow({ flow, domainEvent, services }, err => {
-        assert.that(err).is.null();
-        done();
-      });
+      await eventHandler.forStatelessFlow({ flow, domainEvent, unpublishedCommands });
     });
 
-    test('handles events asynchronously.', done => {
+    test('handles events asynchronously.', async () => {
       const domainEvent = buildEvent('unitTests', 'stateless', 'doesSomethingAsync', {}),
-            flow = flows.unitTestsStateless,
-            services = buildServices({ domainEvent, unpublishedCommands });
+            flow = flows.unitTestsStateless;
 
-      eventHandler.forStatelessFlow({ flow, domainEvent, services }, err => {
-        assert.that(err).is.null();
-        done();
-      });
+      await eventHandler.forStatelessFlow({ flow, domainEvent, unpublishedCommands });
     });
 
-    test('provides services to event listeners that request it.', done => {
+    test('provides services to event listeners that request it.', async () => {
       const domainEvent = buildEvent('unitTests', 'stateless', 'withService', {}),
-            flow = flows.unitTestsStateless,
-            services = buildServices({ domainEvent, unpublishedCommands });
+            flow = flows.unitTestsStateless;
 
-      eventHandler.forStatelessFlow({ flow, domainEvent, services }, err => {
-        assert.that(err).is.null();
-        done();
-      });
+      await eventHandler.forStatelessFlow({ flow, domainEvent, unpublishedCommands });
     });
 
-    test('returns the unpublished commands.', done => {
+    test('returns the unpublished commands.', async () => {
       const domainEvent = buildEvent('unitTests', 'stateless', 'sendCommand', {
         initiator: 'Jane Doe',
         destination: 'Riva'
@@ -155,57 +97,44 @@ suite('EventHandler', () => {
 
       domainEvent.addUser({ id: uuid() });
 
-      const flow = flows.unitTestsStatelessWithCommands,
-            services = buildServices({ domainEvent, unpublishedCommands });
+      const flow = flows.unitTestsStatelessWithCommands;
 
-      eventHandler.forStatelessFlow({ flow, domainEvent, services }, err => {
-        assert.that(err).is.null();
+      await eventHandler.forStatelessFlow({ flow, domainEvent, unpublishedCommands });
 
-        assert.that(unpublishedCommands.length).is.equalTo(1);
-        assert.that(unpublishedCommands[0].context.name).is.equalTo('planning');
-        assert.that(unpublishedCommands[0].aggregate.name).is.equalTo('peerGroup');
-        assert.that(unpublishedCommands[0].name).is.equalTo('start');
-        assert.that(unpublishedCommands[0].data.initiator).is.equalTo('Jane Doe');
-        assert.that(unpublishedCommands[0].data.destination).is.equalTo('Riva');
-
-        done();
-      });
+      assert.that(unpublishedCommands.length).is.equalTo(1);
+      assert.that(unpublishedCommands[0].context.name).is.equalTo('planning');
+      assert.that(unpublishedCommands[0].aggregate.name).is.equalTo('peerGroup');
+      assert.that(unpublishedCommands[0].name).is.equalTo('start');
+      assert.that(unpublishedCommands[0].data.initiator).is.equalTo('Jane Doe');
+      assert.that(unpublishedCommands[0].data.destination).is.equalTo('Riva');
     });
 
-    test('does not return an error if a listener fails.', done => {
+    test('does not return an error if a listener fails.', async () => {
       const domainEvent = buildEvent('unitTests', 'stateless', 'fail', {}),
-            flow = flows.unitTestsStatelessErrorHandling,
-            services = buildServices({ domainEvent, unpublishedCommands });
+            flow = flows.unitTestsStatelessErrorHandling;
 
-      record(stop => {
-        eventHandler.forStatelessFlow({ flow, domainEvent, services }, err => {
-          assert.that(err).is.null();
-          stop();
-        });
-      }, (err, stdout) => {
-        assert.that(err).is.null();
-        assert.that(stdout.includes('Failed to run reaction.')).is.true();
-        assert.that(stdout.includes('Something, somewhere, went horribly wrong.')).is.true();
-        done();
-      });
+      const stop = record();
+
+      await eventHandler.forStatelessFlow({ flow, domainEvent, unpublishedCommands });
+
+      const { stdout } = stop();
+
+      assert.that(stdout.includes('Failed to run reaction.')).is.true();
+      assert.that(stdout.includes('Something, somewhere, went horribly wrong.')).is.true();
     });
 
-    test('returns an error if a listener fails asynchronously.', done => {
+    test('returns an error if a listener fails asynchronously.', async () => {
       const domainEvent = buildEvent('unitTests', 'stateless', 'failAsync', {}),
-            flow = flows.unitTestsStatelessErrorHandling,
-            services = buildServices({ domainEvent, unpublishedCommands });
+            flow = flows.unitTestsStatelessErrorHandling;
 
-      record(stop => {
-        eventHandler.forStatelessFlow({ flow, domainEvent, services }, err => {
-          assert.that(err).is.null();
-          stop();
-        });
-      }, (err, stdout) => {
-        assert.that(err).is.null();
-        assert.that(stdout.includes('Failed to run reaction.')).is.true();
-        assert.that(stdout.includes('Something, somewhere, went horribly wrong.')).is.true();
-        done();
-      });
+      const stop = record();
+
+      await eventHandler.forStatelessFlow({ flow, domainEvent, unpublishedCommands });
+
+      const { stdout } = stop();
+
+      assert.that(stdout.includes('Failed to run reaction.')).is.true();
+      assert.that(stdout.includes('Something, somewhere, went horribly wrong.')).is.true();
     });
   });
 
@@ -215,53 +144,42 @@ suite('EventHandler', () => {
         unpublishedCommands;
 
     setup(() => {
-      eventHandler = new EventHandler({ app });
+      eventHandler = new EventHandler({ app, writeModel });
       flowId = uuid();
       unpublishedCommands = [];
     });
 
-    test('is a function.', done => {
+    test('is a function.', async () => {
       assert.that(eventHandler.forStatefulFlow).is.ofType('function');
-      done();
     });
 
-    test('throws an error if options are missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatefulFlow();
-      }).is.throwing('Options are missing.');
-      done();
+    test('throws an error if flow is missing.', async () => {
+      await assert.that(async () => {
+        await eventHandler.forStatefulFlow({});
+      }).is.throwingAsync('Flow is missing.');
     });
 
-    test('throws an error if flow aggregate is missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatefulFlow({});
-      }).is.throwing('Flow aggregate is missing.');
-      done();
+    test('throws an error if flow aggregate is missing.', async () => {
+      await assert.that(async () => {
+        await eventHandler.forStatefulFlow({ flow: {}});
+      }).is.throwingAsync('Flow aggregate is missing.');
     });
 
-    test('throws an error if domain event is missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatefulFlow({ flowAggregate: {}});
-      }).is.throwing('Domain event is missing.');
-      done();
+    test('throws an error if domain event is missing.', async () => {
+      await assert.that(async () => {
+        await eventHandler.forStatefulFlow({ flow: {}, flowAggregate: {}});
+      }).is.throwingAsync('Domain event is missing.');
     });
 
-    test('throws an error if services are missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatefulFlow({ flowAggregate: {}, domainEvent: {}});
-      }).is.throwing('Services are missing.');
-      done();
+    test('throws an error if unpublished commands are missing.', async () => {
+      await assert.that(async () => {
+        await eventHandler.forStatefulFlow({ flow: {}, flowAggregate: {}, domainEvent: {}});
+      }).is.throwingAsync('Unpublished commands are missing.');
     });
 
-    test('throws an error if callback is missing.', done => {
-      assert.that(() => {
-        eventHandler.forStatefulFlow({ flowAggregate: {}, domainEvent: {}, services: {}});
-      }).is.throwing('Callback is missing.');
-      done();
-    });
-
-    test('does not transition the state of the flow aggregate if the flow is not interested in any domain event in the current state at all.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulNotInterestedInAnyEvent', 'first', {});
+    test('does not transition the state of the flow aggregate if the flow is not interested in any domain event in the current state at all.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulNotInterestedInAnyEvent', 'first', {}),
+            flow = flows.unitTestsStatefulNotInterestedInAnyEvent;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -270,18 +188,15 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
 
-      eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-        assert.that(err).is.null();
-        assert.that(flowAggregate.instance.uncommittedEvents).is.equalTo([]);
-        assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('pristine');
-        done();
-      });
+      assert.that(flowAggregate.instance.uncommittedEvents).is.equalTo([]);
+      assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('pristine');
     });
 
-    test('does not transition the state of the flow aggregate if the flow is not interested in the given domain event in the current state.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulNotInterestedInSpecificEvent', 'second', {});
+    test('does not transition the state of the flow aggregate if the flow is not interested in the given domain event in the current state.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulNotInterestedInSpecificEvent', 'second', {}),
+            flow = flows.unitTestsStatefulNotInterestedInSpecificEvent;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -290,18 +205,15 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
 
-      eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-        assert.that(err).is.null();
-        assert.that(flowAggregate.instance.uncommittedEvents).is.equalTo([]);
-        assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('pristine');
-        done();
-      });
+      assert.that(flowAggregate.instance.uncommittedEvents).is.equalTo([]);
+      assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('pristine');
     });
 
-    test('transitions to failed state if a transition throws an error.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulThrowErrorInTransition', 'first', {});
+    test('transitions to failed state if a transition throws an error.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulThrowErrorInTransition', 'first', {}),
+            flow = flows.unitTestsStatefulThrowErrorInTransition;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -310,22 +222,19 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
 
-      eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-        assert.that(err).is.null();
-        assert.that(flowAggregate.instance.uncommittedEvents.length).is.equalTo(1);
-        assert.that(flowAggregate.instance.uncommittedEvents[0].name).is.equalTo('transitioned');
-        assert.that(flowAggregate.instance.uncommittedEvents[0].data).is.equalTo({
-          state: { is: 'failed' }
-        });
-        assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('failed');
-        done();
+      assert.that(flowAggregate.instance.uncommittedEvents.length).is.equalTo(1);
+      assert.that(flowAggregate.instance.uncommittedEvents[0].name).is.equalTo('transitioned');
+      assert.that(flowAggregate.instance.uncommittedEvents[0].data).is.equalTo({
+        state: { is: 'failed' }
       });
+      assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('failed');
     });
 
-    test('publishes a transitioned event.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulTransitions', 'first', {});
+    test('publishes a transitioned event.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulTransitions', 'first', {}),
+            flow = flows.unitTestsStatefulTransitions;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -334,22 +243,19 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
 
-      eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-        assert.that(err).is.null();
-        assert.that(flowAggregate.instance.uncommittedEvents.length).is.equalTo(1);
-        assert.that(flowAggregate.instance.uncommittedEvents[0].name).is.equalTo('transitioned');
-        assert.that(flowAggregate.instance.uncommittedEvents[0].data).is.equalTo({
-          state: { is: 'completed', port: 3000 }
-        });
-        assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('completed');
-        done();
+      assert.that(flowAggregate.instance.uncommittedEvents.length).is.equalTo(1);
+      assert.that(flowAggregate.instance.uncommittedEvents[0].name).is.equalTo('transitioned');
+      assert.that(flowAggregate.instance.uncommittedEvents[0].data).is.equalTo({
+        state: { is: 'completed', port: 3000 }
       });
+      assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('completed');
     });
 
-    test('does not react to a transition if there are no when handlers for the previous state.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulNoWhenForPrevious', 'first', {});
+    test('does not react to a transition if there are no when handlers for the previous state.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulNoWhenForPrevious', 'first', {}),
+            flow = flows.unitTestsStatefulNoWhenForPrevious;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -358,22 +264,18 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      const stop = record();
 
-      record(stop => {
-        eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-          assert.that(err).is.null();
-          stop();
-        });
-      }, (err, stdout) => {
-        assert.that(err).is.null();
-        assert.that(stdout.includes('Should not be recorded by the tests.')).is.false();
-        done();
-      });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
+
+      const { stdout } = stop();
+
+      assert.that(stdout.includes('Should not be recorded by the tests.')).is.false();
     });
 
-    test('does not react to a transition if there are no when handlers for the next state.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulNoWhenForNext', 'first', {});
+    test('does not react to a transition if there are no when handlers for the next state.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulNoWhenForNext', 'first', {}),
+            flow = flows.unitTestsStatefulNoWhenForNext;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -382,22 +284,18 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      const stop = record();
 
-      record(stop => {
-        eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-          assert.that(err).is.null();
-          stop();
-        });
-      }, (err, stdout) => {
-        assert.that(err).is.null();
-        assert.that(stdout.includes('Should not be recorded by the tests.')).is.false();
-        done();
-      });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
+
+      const { stdout } = stop();
+
+      assert.that(stdout.includes('Should not be recorded by the tests.')).is.false();
     });
 
-    test('reacts to a transition if there is a when handler.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulWithReaction', 'first', {});
+    test('reacts to a transition if there is a when handler.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulWithReaction', 'first', {}),
+            flow = flows.unitTestsStatefulWithReaction;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -406,22 +304,18 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      const stop = record();
 
-      record(stop => {
-        eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-          assert.that(err).is.null();
-          stop();
-        });
-      }, (err, stdout) => {
-        assert.that(err).is.null();
-        assert.that(stdout.includes('Should be recorded by the tests.')).is.true();
-        done();
-      });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
+
+      const { stdout } = stop();
+
+      assert.that(stdout.includes('Should be recorded by the tests.')).is.true();
     });
 
-    test('logs an error if reaction is marked as failed.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulWithFailingReaction', 'first', {});
+    test('logs an error if reaction is marked as failed.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulWithFailingReaction', 'first', {}),
+            flow = flows.unitTestsStatefulWithFailingReaction;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -430,23 +324,19 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      const stop = record();
 
-      record(stop => {
-        eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-          assert.that(err).is.null();
-          stop();
-        });
-      }, (err, stdout) => {
-        assert.that(err).is.null();
-        assert.that(stdout.includes('Failed to run reaction.')).is.true();
-        assert.that(stdout.includes('Something went wrong.')).is.true();
-        done();
-      });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
+
+      const { stdout } = stop();
+
+      assert.that(stdout.includes('Failed to run reaction.')).is.true();
+      assert.that(stdout.includes('Something went wrong.')).is.true();
     });
 
-    test('logs an error if reaction throws an error.', done => {
-      const domainEvent = buildEvent('unitTests', 'statefulWithThrowingReaction', 'first', {});
+    test('logs an error if reaction throws an error.', async () => {
+      const domainEvent = buildEvent('unitTests', 'statefulWithThrowingReaction', 'first', {}),
+            flow = flows.unitTestsStatefulWithThrowingReaction;
 
       const flowAggregate = new FlowAggregate({
         app,
@@ -455,19 +345,14 @@ suite('EventHandler', () => {
         domainEvent
       });
 
-      const services = buildServices({ domainEvent, unpublishedCommands });
+      const stop = record();
 
-      record(stop => {
-        eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-          assert.that(err).is.null();
-          stop();
-        });
-      }, (err, stdout) => {
-        assert.that(err).is.null();
-        assert.that(stdout.includes('Failed to run reaction.')).is.true();
-        assert.that(stdout.includes('Something went wrong.')).is.true();
-        done();
-      });
+      await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
+
+      const { stdout } = stop();
+
+      assert.that(stdout.includes('Failed to run reaction.')).is.true();
+      assert.that(stdout.includes('Something went wrong.')).is.true();
     });
   });
 });

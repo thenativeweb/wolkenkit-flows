@@ -7,7 +7,7 @@ const repository = require('../../repository');
 
 const workflow = requireDir(__dirname);
 
-const runStatefulFlows = async function ({ eventHandler, flows, domainEvent }) {
+const runStatefulFlows = async function ({ eventHandler, flows, domainEvent, unpublishedCommands }) {
   if (!eventHandler) {
     throw new Error('Event handler is missing.');
   }
@@ -17,6 +17,9 @@ const runStatefulFlows = async function ({ eventHandler, flows, domainEvent }) {
   if (!domainEvent) {
     throw new Error('Domain event is missing.');
   }
+  if (!unpublishedCommands) {
+    throw new Error('Unpublished commands are missing.');
+  }
 
   await Promise.all(map(flows, async (flow, flowName) => {
     flow.name = flowName;
@@ -24,7 +27,7 @@ const runStatefulFlows = async function ({ eventHandler, flows, domainEvent }) {
     const flowId = workflow.getFlowId({ domainEvent, flow });
     const flowAggregate = workflow.loadFlowAggregate({ flow, flowId, repository, domainEvent });
 
-    await workflow.handleEvent({ flow, flowAggregate, domainEvent, eventHandler });
+    await workflow.handleEvent({ flow, flowAggregate, domainEvent, eventHandler, unpublishedCommands });
     await workflow.saveFlowAggregate({ flowAggregate, repository });
   }));
 };

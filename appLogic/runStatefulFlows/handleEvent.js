@@ -1,6 +1,6 @@
 'use strict';
 
-const handleEvent = async function ({ flow, flowAggregate, domainEvent, eventHandler }) {
+const handleEvent = async function ({ flow, flowAggregate, domainEvent, eventHandler, unpublishedCommands }) {
   if (!flow) {
     throw new Error('Flow is missing.');
   }
@@ -13,8 +13,11 @@ const handleEvent = async function ({ flow, flowAggregate, domainEvent, eventHan
   if (!eventHandler) {
     throw new Error('Event handler is missing.');
   }
+  if (!unpublishedCommands) {
+    throw new Error('Unpublished commands are missing.');
+  }
 
-  await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent });
+  await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
 };
 
 module.exports = handleEvent;
