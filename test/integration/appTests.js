@@ -4,7 +4,6 @@ const { EventEmitter } = require('events'),
       path = require('path');
 
 const assert = require('assertthat'),
-      async = require('async'),
       EventStore = require('sparbuch/lib/postgres/Sparbuch'),
       hase = require('hase'),
       runfork = require('runfork'),
@@ -165,36 +164,36 @@ suite('integrationTests', function () {
 
   suite('stateless flows', () => {
     suite('without commands', () => {
-      test.skip('triggers an external service when a registered event is received.', async () => {
-        const event = buildEvent('integrationTests', 'stateless', 'callExternalService', {
-          port: 3000
-        });
+      test('triggers an external service when a registered event is received.', async () => {
+        await Promise.all([
+          new Promise((resolve, reject) => {
+            try {
+              runfork({
+                path: path.join(__dirname, 'server.js'),
+                env: { PORT: 3000 },
+                onExit () {
+                  resolve();
+                }
+              });
+            } catch (ex) {
+              reject(ex);
+            }
+          }),
+          (async () => {
+            await waitForHost('http://localhost:3000/');
 
-        async.series({
-          startExternalService (callback) {
-            runfork({
-              path: path.join(__dirname, 'server.js'),
-              env: { PORT: 3000 },
-              onExit () {
-                done();
-              }
-            }, callback);
-          },
-          waitForExternalService (callback) {
-            waitForHost('http://localhost:3000/', callback);
-          },
-          sendEventToFlow (callback) {
+            const event = buildEvent('integrationTests', 'stateless', 'callExternalService', {
+              port: 3000
+            });
+
             flowbus.write(event);
-            callback();
-          }
-        }, err => {
-          assert.that(err).is.null();
-        });
+          })()
+        ]);
       });
     });
 
     suite('with commands', () => {
-      test.skip('sends a command when a registered event is received.', async () => {
+      test('sends a command when a registered event is received.', async () => {
         const event = buildEvent('integrationTests', 'stateless', 'sendCommand', {
           destination: 'Riva',
           initiator: 'Jane Doe'
@@ -202,24 +201,28 @@ suite('integrationTests', function () {
 
         event.addUser({ id: uuid() });
 
-        waitForCommand('start', command => {
-          assert.that(command.payload.context.name).is.equalTo('planning');
-          assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
-          assert.that(command.payload.name).is.equalTo('start');
-          assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
-          assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
-          assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
-          assert.that(command.payload.user).is.equalTo({
-            id: event.user.id,
-            token: { sub: event.user.id }
-          });
-          done();
-        });
+        await Promise.all([
+          (async () => {
+            const command = await waitForCommand('start');
 
-        flowbus.write(event);
+            assert.that(command.payload.context.name).is.equalTo('planning');
+            assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
+            assert.that(command.payload.name).is.equalTo('start');
+            assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
+            assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
+            assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
+            assert.that(command.payload.user).is.equalTo({
+              id: event.user.id,
+              token: { sub: event.user.id }
+            });
+          })(),
+          (async () => {
+            flowbus.write(event);
+          })()
+        ]);
       });
 
-      test.skip('sends a command as another user when the flow tries to impersonate.', async () => {
+      test('sends a command as another user when the flow tries to impersonate.', async () => {
         const event = buildEvent('integrationTests', 'stateless', 'sendCommandAsUser', {
           destination: 'Riva',
           initiator: 'Jane Doe',
@@ -228,146 +231,150 @@ suite('integrationTests', function () {
 
         event.addUser({ id: uuid() });
 
-        waitForCommand('start', command => {
-          assert.that(command.payload.context.name).is.equalTo('planning');
-          assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
-          assert.that(command.payload.name).is.equalTo('start');
-          assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
-          assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
-          assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
-          assert.that(command.payload.user).is.equalTo({
-            id: event.data.asUser,
-            token: { sub: event.data.asUser }
-          });
-          done();
-        });
+        await Promise.all([
+          (async () => {
+            const command = await waitForCommand('start');
 
-        flowbus.write(event);
+            assert.that(command.payload.context.name).is.equalTo('planning');
+            assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
+            assert.that(command.payload.name).is.equalTo('start');
+            assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
+            assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
+            assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
+            assert.that(command.payload.user).is.equalTo({
+              id: event.data.asUser,
+              token: { sub: event.data.asUser }
+            });
+          })(),
+          (async () => {
+            flowbus.write(event);
+          })()
+        ]);
       });
     });
 
     suite('error handling', () => {
-      test.skip('gracefully handles failing event handlers.', async () => {
-        const invalidEvent = buildEvent('integrationTests', 'stateless', 'fail', {});
-        const validEvent = buildEvent('integrationTests', 'stateless', 'callExternalService', {
-          port: 3000
-        });
+      test('gracefully handles failing event handlers.', async () => {
+        await Promise.all([
+          new Promise((resolve, reject) => {
+            try {
+              runfork({
+                path: path.join(__dirname, 'server.js'),
+                env: { PORT: 3000 },
+                onExit () {
+                  resolve();
+                }
+              });
+            } catch (ex) {
+              reject(ex);
+            }
+          }),
+          (async () => {
+            await waitForHost('http://localhost:3000/');
 
-        async.series({
-          startExternalService (callback) {
-            runfork({
-              path: path.join(__dirname, 'server.js'),
-              env: { PORT: 3000 },
-              onExit () {
-                done();
-              }
-            }, callback);
-          },
-          waitForExternalService (callback) {
-            waitForHost('http://localhost:3000/', callback);
-          },
-          sendEventToFlow (callback) {
+            const invalidEvent = buildEvent('integrationTests', 'stateless', 'fail', {});
+            const validEvent = buildEvent('integrationTests', 'stateless', 'callExternalService', {
+              port: 3000
+            });
+
             flowbus.write(invalidEvent);
             flowbus.write(validEvent);
-            callback();
-          }
-        }, err => {
-          assert.that(err).is.null();
-        });
+          })()
+        ]);
       });
 
-      test.skip('gracefully handles event handlers that mark events as failed.', async () => {
-        const invalidEvent = buildEvent('integrationTests', 'stateless', 'markAsFailed', {});
-        const validEvent = buildEvent('integrationTests', 'stateless', 'callExternalService', {
-          port: 3000
-        });
+      test('gracefully handles event handlers that mark events as failed.', async () => {
+        await Promise.all([
+          new Promise((resolve, reject) => {
+            try {
+              runfork({
+                path: path.join(__dirname, 'server.js'),
+                env: { PORT: 3000 },
+                onExit () {
+                  resolve();
+                }
+              });
+            } catch (ex) {
+              reject(ex);
+            }
+          }),
+          (async () => {
+            await waitForHost('http://localhost:3000/');
 
-        async.series({
-          startExternalService (callback) {
-            runfork({
-              path: path.join(__dirname, 'server.js'),
-              env: { PORT: 3000 },
-              onExit () {
-                done();
-              }
-            }, callback);
-          },
-          waitForExternalService (callback) {
-            waitForHost('http://localhost:3000/', callback);
-          },
-          sendEventToFlow (callback) {
+            const invalidEvent = buildEvent('integrationTests', 'stateless', 'markAsFailed', {});
+            const validEvent = buildEvent('integrationTests', 'stateless', 'callExternalService', {
+              port: 3000
+            });
+
             flowbus.write(invalidEvent);
             flowbus.write(validEvent);
-            callback();
-          }
-        }, err => {
-          assert.that(err).is.null();
-        });
+          })()
+        ]);
       });
     });
   });
 
   suite('stateful flows', () => {
     suite('without commands', () => {
-      test.skip('triggers an external service when a transition causes a reaction.', async () => {
-        const event = buildEvent('integrationTests', 'statefulPerformTransition', 'callExternalService', {
-          port: 3000
-        });
+      test('triggers an external service when a transition causes a reaction.', async () => {
+        await Promise.all([
+          new Promise((resolve, reject) => {
+            try {
+              runfork({
+                path: path.join(__dirname, 'server.js'),
+                env: { PORT: 3000 },
+                onExit () {
+                  resolve();
+                }
+              });
+            } catch (ex) {
+              reject(ex);
+            }
+          }),
+          (async () => {
+            await waitForHost('http://localhost:3000/');
 
-        async.series({
-          startExternalService (callback) {
-            runfork({
-              path: path.join(__dirname, 'server.js'),
-              env: { PORT: 3000 },
-              onExit () {
-                done();
-              }
-            }, callback);
-          },
-          waitForExternalService (callback) {
-            waitForHost('http://localhost:3000/', callback);
-          },
-          sendEventToFlow (callback) {
+            const event = buildEvent('integrationTests', 'statefulPerformTransition', 'callExternalService', {
+              port: 3000
+            });
+
             flowbus.write(event);
-            callback();
-          }
-        }, err => {
-          assert.that(err).is.null();
-        });
+          })()
+        ]);
       });
 
-      test.skip('persists state.', async () => {
-        const eventSetPort = buildEvent('integrationTests', 'statefulPersistState', 'setPort', {
-          port: 3000
-        });
-        const eventCallExternalService = buildEvent('integrationTests', 'statefulPersistState', eventSetPort.aggregate.id, 'callExternalService', {});
+      test('persists state.', async () => {
+        await Promise.all([
+          new Promise((resolve, reject) => {
+            try {
+              runfork({
+                path: path.join(__dirname, 'server.js'),
+                env: { PORT: 3000 },
+                onExit () {
+                  resolve();
+                }
+              });
+            } catch (ex) {
+              reject(ex);
+            }
+          }),
+          (async () => {
+            await waitForHost('http://localhost:3000/');
 
-        async.series({
-          startExternalService (callback) {
-            runfork({
-              path: path.join(__dirname, 'server.js'),
-              env: { PORT: 3000 },
-              onExit () {
-                done();
-              }
-            }, callback);
-          },
-          waitForExternalService (callback) {
-            waitForHost('http://localhost:3000/', callback);
-          },
-          sendEventToFlow (callback) {
+            const eventSetPort = buildEvent('integrationTests', 'statefulPersistState', 'setPort', {
+              port: 3000
+            });
+            const eventCallExternalService = buildEvent('integrationTests', 'statefulPersistState', eventSetPort.aggregate.id, 'callExternalService', {});
+
             flowbus.write(eventSetPort);
             flowbus.write(eventCallExternalService);
-            callback();
-          }
-        }, err => {
-          assert.that(err).is.null();
-        });
+          })()
+        ]);
       });
     });
 
     suite('with commands', () => {
-      test.skip('sends a command when a registered event is received.', async () => {
+      test('sends a command when a registered event is received.', async () => {
         const event = buildEvent('integrationTests', 'statefulWithCommand', 'sendCommand', {
           destination: 'Riva',
           initiator: 'Jane Doe'
@@ -375,24 +382,28 @@ suite('integrationTests', function () {
 
         event.addUser({ id: uuid() });
 
-        waitForCommand('start', command => {
-          assert.that(command.payload.context.name).is.equalTo('planning');
-          assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
-          assert.that(command.payload.name).is.equalTo('start');
-          assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
-          assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
-          assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
-          assert.that(command.payload.user).is.equalTo({
-            id: event.user.id,
-            token: { sub: event.user.id }
-          });
-          done();
-        });
+        await Promise.all([
+          (async () => {
+            const command = await waitForCommand('start');
 
-        flowbus.write(event);
+            assert.that(command.payload.context.name).is.equalTo('planning');
+            assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
+            assert.that(command.payload.name).is.equalTo('start');
+            assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
+            assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
+            assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
+            assert.that(command.payload.user).is.equalTo({
+              id: event.user.id,
+              token: { sub: event.user.id }
+            });
+          })(),
+          (async () => {
+            flowbus.write(event);
+          })()
+        ]);
       });
 
-      test.skip('sends a command as another user when the flow tries to impersonate.', async () => {
+      test('sends a command as another user when the flow tries to impersonate.', async () => {
         const event = buildEvent('integrationTests', 'statefulWithCommandAndImpersonation', 'sendCommandAsUser', {
           destination: 'Riva',
           initiator: 'Jane Doe',
@@ -401,48 +412,52 @@ suite('integrationTests', function () {
 
         event.addUser({ id: uuid() });
 
-        waitForCommand('start', command => {
-          assert.that(command.payload.context.name).is.equalTo('planning');
-          assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
-          assert.that(command.payload.name).is.equalTo('start');
-          assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
-          assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
-          assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
-          assert.that(command.payload.user).is.equalTo({
-            id: event.data.asUser,
-            token: { sub: event.data.asUser }
-          });
-          done();
-        });
+        await Promise.all([
+          (async () => {
+            const command = await waitForCommand('start');
 
-        flowbus.write(event);
+            assert.that(command.payload.context.name).is.equalTo('planning');
+            assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
+            assert.that(command.payload.name).is.equalTo('start');
+            assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
+            assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
+            assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
+            assert.that(command.payload.user).is.equalTo({
+              id: event.data.asUser,
+              token: { sub: event.data.asUser }
+            });
+          })(),
+          (async () => {
+            flowbus.write(event);
+          })()
+        ]);
       });
     });
 
     suite('error handling', () => {
-      test.skip('enters failed state when the transition fails.', async () => {
-        const event = buildEvent('integrationTests', 'statefulFailedState', 'fail', {});
+      test('enters failed state when the transition fails.', async () => {
+        await Promise.all([
+          new Promise((resolve, reject) => {
+            try {
+              runfork({
+                path: path.join(__dirname, 'server.js'),
+                env: { PORT: 3000 },
+                onExit () {
+                  resolve();
+                }
+              });
+            } catch (ex) {
+              reject(ex);
+            }
+          }),
+          (async () => {
+            await waitForHost('http://localhost:3000/');
 
-        async.series({
-          startExternalService (callback) {
-            runfork({
-              path: path.join(__dirname, 'server.js'),
-              env: { PORT: 3000 },
-              onExit () {
-                done();
-              }
-            }, callback);
-          },
-          waitForExternalService (callback) {
-            waitForHost('http://localhost:3000/', callback);
-          },
-          sendEventToFlow (callback) {
+            const event = buildEvent('integrationTests', 'statefulFailedState', 'fail', {});
+
             flowbus.write(event);
-            callback();
-          }
-        }, err => {
-          assert.that(err).is.null();
-        });
+          })()
+        ]);
       });
     });
   });
