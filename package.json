@@ -18,16 +18,15 @@
     "processenv": "1.0.0",
     "require-dir": "1.0.0",
     "sparbuch": "2.1.0",
-    "stack-trace": "0.0.10",
     "tailwind": "2.0.4",
     "uuidv4": "1.0.0",
     "wolkenkit-application": "1.0.2"
   },
   "devDependencies": {
+    "amqplib": "0.5.2",
     "assertthat": "1.0.0",
     "async-retry": "1.2.1",
     "commands-events": "1.0.1",
-    "flaschenpost": "1.1.1",
     "hase": "1.0.1",
     "knockat": "1.0.4",
     "measure-time": "3.1.1",
