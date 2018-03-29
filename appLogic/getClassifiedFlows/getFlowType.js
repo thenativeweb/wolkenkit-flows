@@ -11,6 +11,7 @@ const getFlowType = function (flow) {
   if (!flow.identity && !flow.initialState && !flow.transitions && flow.when) {
     return 'stateless';
   }
+
   throw new Error('Unknown flow type.');
 };
 

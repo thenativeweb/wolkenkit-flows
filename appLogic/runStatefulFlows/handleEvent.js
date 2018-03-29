@@ -1,36 +1,23 @@
 'use strict';
 
-const handleEvent = function (options) {
-  if (!options) {
-    throw new Error('Options are missing.');
+const handleEvent = async function ({ flow, flowAggregate, domainEvent, eventHandler, unpublishedCommands }) {
+  if (!flow) {
+    throw new Error('Flow is missing.');
   }
-  if (!options.domainEvent) {
+  if (!flowAggregate) {
+    throw new Error('Flow aggregate is missing.');
+  }
+  if (!domainEvent) {
     throw new Error('Domain event is missing.');
   }
-  if (!options.eventHandler) {
+  if (!eventHandler) {
     throw new Error('Event handler is missing.');
   }
-  if (!options.services) {
-    throw new Error('Services are missing.');
+  if (!unpublishedCommands) {
+    throw new Error('Unpublished commands are missing.');
   }
 
-  const { domainEvent, eventHandler, services } = options;
-
-  return function (flowAggregate, done) {
-    if (!flowAggregate) {
-      throw new Error('Flow aggregate is missing.');
-    }
-    if (!done) {
-      throw new Error('Callback is missing.');
-    }
-
-    eventHandler.forStatefulFlow({ flowAggregate, domainEvent, services }, err => {
-      if (err) {
-        return done(err);
-      }
-      done(null, flowAggregate);
-    });
-  };
+  await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
 };
 
 module.exports = handleEvent;

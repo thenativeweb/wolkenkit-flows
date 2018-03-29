@@ -18,8 +18,8 @@ const transitions = {
 
 const when = {
   pristine: {
-    completed (flow, event, mark) {
-      mark.asFailed('Something went wrong.');
+    completed (flow, event) {
+      event.fail('Something went wrong.');
     }
   }
 };

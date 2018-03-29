@@ -1,37 +1,27 @@
 'use strict';
 
-const async = require('async'),
+const map = require('lodash/map'),
       requireDir = require('require-dir');
 
-const workflow = requireDir();
+const workflow = requireDir(__dirname);
 
-const runStatelessFlows = function (options, callback) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.eventHandler) {
+const runStatelessFlows = async function ({ eventHandler, flows, domainEvent, unpublishedCommands }) {
+  if (!eventHandler) {
     throw new Error('Event handler is missing.');
   }
-  if (!options.flows) {
+  if (!flows) {
     throw new Error('Flows are missing.');
   }
-  if (!options.domainEvent) {
+  if (!domainEvent) {
     throw new Error('Domain event is missing.');
   }
-  if (!options.services) {
-    throw new Error('Services are missing.');
-  }
-  if (!callback) {
-    throw new Error('Callback is missing.');
+  if (!unpublishedCommands) {
+    throw new Error('Unpublished commands are missing.');
   }
 
-  const { eventHandler, flows, domainEvent, services } = options;
-
-  async.each(flows, (flow, done) => {
-    async.waterfall([
-      workflow.handleEvent({ eventHandler, flow, domainEvent, services })
-    ], done);
-  }, callback);
+  await Promise.all(map(flows, async flow => {
+    await workflow.handleEvent({ eventHandler, flow, domainEvent, unpublishedCommands });
+  }));
 };
 
 module.exports = runStatelessFlows;

@@ -1,19 +1,16 @@
 'use strict';
 
 const when = {
-  'unitTests.stateless.doesNothing' (event, mark) {
-    mark.asDone();
+  'unitTests.stateless.doesNothing' () {
+    // Intentionally left blank.
   },
 
-  'unitTests.stateless.doesSomethingAsync' (event, mark) {
-    process.nextTick(() => mark.asDone());
+  async 'unitTests.stateless.doesSomethingAsync' () {
+    await new Promise(resolve => setTimeout(resolve, 0.1 * 1000));
   },
 
-  'unitTests.stateless.withService' (event, services, mark) {
-    const logger = services.get('logger');
-
+  'unitTests.stateless.withService' (event, { logger }) {
     logger.info('Stateless, with service...');
-    mark.asDone();
   }
 };
 

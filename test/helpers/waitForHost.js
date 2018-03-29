@@ -1,18 +1,17 @@
 'use strict';
 
-const url = require('url');
+const { parse } = require('url');
 
 const knock = require('knockat');
 
-const waitFor = function (connectionString, callback) {
-  const service = url.parse(connectionString);
+const waitFor = async function (url) {
+  if (!url) {
+    throw new Error('Url is missing.');
+  }
 
-  knock.at(service.hostname, service.port, errKnockAt => {
-    if (errKnockAt) {
-      return callback(errKnockAt);
-    }
-    callback(null);
-  });
+  const service = parse(url);
+
+  await knock.at(service.hostname, service.port);
 };
 
 module.exports = waitFor;

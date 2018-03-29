@@ -18,12 +18,8 @@ const transitions = {
 
 const when = {
   pristine: {
-    completed (flow, event, services, mark) {
-      const logger = services.get('logger');
-
+    completed (flow, event, { logger }) {
       logger.info('Should be recorded by the tests.');
-
-      mark.asDone();
     }
   }
 };

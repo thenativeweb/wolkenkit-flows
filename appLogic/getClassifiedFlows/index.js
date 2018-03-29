@@ -1,6 +1,6 @@
 'use strict';
 
-const _ = require('lodash');
+const forOwn = require('lodash/forOwn');
 
 const getFlowType = require('./getFlowType');
 
@@ -9,33 +9,36 @@ const getClassifiedFlows = function (flows) {
     throw new Error('Flows are missing.');
   }
 
-  const classifiedFlows = {};
+  const classifiedFlows = {
+    stateful: {},
+    stateless: {}
+  };
 
-  classifiedFlows.stateful = {};
-  classifiedFlows.stateless = {};
-
-  _.forOwn(flows, (flow, flowName) => {
+  forOwn(flows, (flow, flowName) => {
     flow.name = flowName;
 
     const flowType = getFlowType(flow);
 
     switch (flowType) {
-      case 'stateful':
-        _.forOwn(flow.transitions, state => {
-          _.forOwn(state, (eventListener, eventName) => {
+      case 'stateful': {
+        forOwn(flow.transitions, state => {
+          forOwn(state, (eventListener, eventName) => {
             classifiedFlows.stateful[eventName] = classifiedFlows.stateful[eventName] || [];
             classifiedFlows.stateful[eventName].push(flow);
           });
         });
         break;
-      case 'stateless':
-        _.forOwn(flow.when, (eventListener, eventName) => {
+      }
+      case 'stateless': {
+        forOwn(flow.when, (eventListener, eventName) => {
           classifiedFlows.stateless[eventName] = classifiedFlows.stateless[eventName] || [];
           classifiedFlows.stateless[eventName].push(flow);
         });
         break;
-      default:
+      }
+      default: {
         throw new Error('Invalid operation.');
+      }
     }
   });
 

@@ -1,34 +1,25 @@
 'use strict';
 
-const loadFlowAggregate = function (options) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.domainEvent) {
-    throw new Error('Domain event is missing.');
-  }
-  if (!options.flow) {
+const loadFlowAggregate = async function ({ flow, flowId, repository, domainEvent }) {
+  if (!flow) {
     throw new Error('Flow is missing.');
   }
-  if (!options.repository) {
+  if (!flowId) {
+    throw new Error('Flow id is missing.');
+  }
+  if (!repository) {
     throw new Error('Repository is missing.');
   }
+  if (!domainEvent) {
+    throw new Error('Domain event is missing.');
+  }
 
-  const { domainEvent, flow, repository } = options;
+  const aggregate = await repository.loadAggregateForDomainEvent({
+    aggregate: { name: flow.name, id: flowId },
+    domainEvent
+  });
 
-  return function (flowId, done) {
-    if (!flowId) {
-      throw new Error('Flow id is missing.');
-    }
-    if (!done) {
-      throw new Error('Callback is missing.');
-    }
-
-    repository.loadAggregateForDomainEvent({
-      aggregate: { name: flow.name, id: flowId },
-      domainEvent
-    }, done);
-  };
+  return aggregate;
 };
 
 module.exports = loadFlowAggregate;

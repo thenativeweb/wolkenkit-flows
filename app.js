@@ -11,39 +11,33 @@ const logic = require('./appLogic'),
 
 const eventStore = require(`sparbuch/${processEnv('EVENTSTORE_TYPE')}`);
 
-const app = tailwind.createApp({
-  profiling: {
-    host: processEnv('PROFILING_HOST'),
-    port: processEnv('PROFILING_PORT')
-  }
-});
+(async () => {
+  const app = tailwind.createApp({
+    profiling: {
+      host: processEnv('PROFILING_HOST'),
+      port: processEnv('PROFILING_PORT')
+    }
+  });
 
-const applicationDirectory = path.join(app.dirname, 'app');
-const { flows, writeModel } = new WolkenkitApplication(applicationDirectory);
+  const applicationDirectory = path.join(app.dirname, 'app');
+  const { flows, writeModel } = new WolkenkitApplication(applicationDirectory);
 
-app.run([
-  done => {
-    eventStore.initialize({
-      url: app.env('EVENTSTORE_URL'),
-      namespace: `${app.env('APPLICATION')}flows`
-    }, done);
-  },
-  done => {
-    repository.initialize({ app, flows, eventStore }, done);
-  },
-  done => {
-    app.commandbus.use(new app.wires.commandbus.amqp.Sender({
-      url: app.env('COMMANDBUS_URL'),
-      application: app.env('APPLICATION')
-    }), done);
-  },
-  done => {
-    app.flowbus.use(new app.wires.flowbus.amqp.Receiver({
-      url: app.env('FLOWBUS_URL'),
-      application: app.env('APPLICATION')
-    }), done);
-  },
-  () => {
-    logic({ app, eventStore, flows, writeModel });
-  }
-]);
+  await eventStore.initialize({
+    url: app.env('EVENTSTORE_URL'),
+    namespace: `${app.env('APPLICATION')}flows`
+  });
+
+  repository.initialize({ app, flows, eventStore });
+
+  await app.commandbus.use(new app.wires.commandbus.amqp.Sender({
+    url: app.env('COMMANDBUS_URL'),
+    application: app.env('APPLICATION')
+  }));
+
+  await app.flowbus.use(new app.wires.flowbus.amqp.Receiver({
+    url: app.env('FLOWBUS_URL'),
+    application: app.env('APPLICATION')
+  }));
+
+  logic({ app, eventStore, flows, writeModel });
+})();

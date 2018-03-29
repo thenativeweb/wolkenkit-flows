@@ -1,147 +1,115 @@
 'use strict';
 
-const EventHandler = function (options) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.app) {
-    throw new Error('App is missing.');
-  }
+const getServices = require('./services/get');
 
-  const { app } = options;
-
-  this.logger = app.services.getLogger();
-};
-
-EventHandler.prototype.forStatelessFlow = function (options, callback) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.flow) {
-    throw new Error('Flow is missing.');
-  }
-  if (!options.domainEvent) {
-    throw new Error('Domain event is missing.');
-  }
-  if (!options.services) {
-    throw new Error('Services are missing.');
-  }
-  if (!callback) {
-    throw new Error('Callback is missing.');
-  }
-
-  const { flow, domainEvent, services } = options;
-
-  const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`;
-  const eventListener = flow.when[eventName];
-
-  const that = this;
-  const mark = {
-    asDone () {
-      process.nextTick(() => callback(null));
-    },
-    asFailed (reason) {
-      const err = new Error(reason);
-
-      that.logger.error('Failed to run reaction.', { err });
-      process.nextTick(() => callback(null));
+class EventHandler {
+  constructor ({ app, writeModel }) {
+    if (!app) {
+      throw new Error('App is missing.');
     }
-  };
-
-  try {
-    if (eventListener.length === 3) {
-      eventListener(domainEvent, services, mark);
-    } else {
-      eventListener(domainEvent, mark);
+    if (!writeModel) {
+      throw new Error('Write model is missing.');
     }
-  } catch (ex) {
-    this.logger.error('Failed to run reaction.', { err: ex });
-    process.nextTick(() => callback(null));
-  }
-};
 
-EventHandler.prototype.forStatefulFlow = function (options, callback) {
-  if (!options) {
-    throw new Error('Options are missing.');
-  }
-  if (!options.flowAggregate) {
-    throw new Error('Flow aggregate is missing.');
-  }
-  if (!options.domainEvent) {
-    throw new Error('Domain event is missing.');
-  }
-  if (!options.services) {
-    throw new Error('Services are missing.');
-  }
-  if (!callback) {
-    throw new Error('Callback is missing.');
+    this.app = app;
+    this.writeModel = writeModel;
+
+    this.logger = app.services.getLogger();
   }
 
-  const { flowAggregate, domainEvent, services } = options;
+  async forStatelessFlow ({ flow, domainEvent, unpublishedCommands }) {
+    if (!flow) {
+      throw new Error('Flow is missing.');
+    }
+    if (!domainEvent) {
+      throw new Error('Domain event is missing.');
+    }
+    if (!unpublishedCommands) {
+      throw new Error('Unpublished commands are missing.');
+    }
 
-  const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
-        previousFlowStateName = flowAggregate.api.forTransitions.state.is;
+    const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`;
+    const eventListener = flow.when[eventName];
 
-  const transitionsForPreviousFlowState = flowAggregate.definition.transitions[previousFlowStateName];
+    domainEvent.fail = reason => {
+      this.logger.error('Failed to run reaction.', { reason });
+    };
 
-  if (!transitionsForPreviousFlowState) {
-    return process.nextTick(() => callback(null));
+    const { app, writeModel } = this;
+    const services = getServices({ app, domainEvent, flow, unpublishedCommands, writeModel });
+
+    try {
+      await eventListener(domainEvent, services);
+    } catch (ex) {
+      this.logger.error('Failed to run reaction.', { ex });
+    }
   }
 
-  const transition = transitionsForPreviousFlowState[eventName];
+  async forStatefulFlow ({ flow, flowAggregate, domainEvent, unpublishedCommands }) {
+    if (!flow) {
+      throw new Error('Flow is missing.');
+    }
+    if (!flowAggregate) {
+      throw new Error('Flow aggregate is missing.');
+    }
+    if (!domainEvent) {
+      throw new Error('Domain event is missing.');
+    }
+    if (!unpublishedCommands) {
+      throw new Error('Unpublished commands are missing.');
+    }
 
-  if (!transition) {
-    return process.nextTick(() => callback(null));
-  }
+    const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
+          previousFlowStateName = flowAggregate.api.forTransitions.state.is;
 
-  try {
-    transition(flowAggregate.api.forTransitions, domainEvent);
-  } catch (ex) {
-    flowAggregate.api.forTransitions.setState({
-      is: 'failed'
+    const transitionsForPreviousFlowState = flowAggregate.definition.transitions[previousFlowStateName];
+
+    if (!transitionsForPreviousFlowState) {
+      return;
+    }
+
+    const transition = transitionsForPreviousFlowState[eventName];
+
+    if (!transition) {
+      return;
+    }
+
+    const { app, writeModel } = this;
+    const services = getServices({ app, flow, domainEvent, unpublishedCommands, writeModel });
+
+    try {
+      transition(flowAggregate.api.forTransitions, domainEvent);
+    } catch (ex) {
+      flowAggregate.api.forTransitions.setState({ is: 'failed' });
+    }
+
+    flowAggregate.instance.events.publish('transitioned', {
+      state: flowAggregate.api.forTransitions.state
     });
-  }
 
-  flowAggregate.instance.events.publish('transitioned', {
-    state: flowAggregate.api.forTransitions.state
-  });
+    const nextFlowStateName = flowAggregate.api.forTransitions.state.is;
+    const whensForPreviousFlowState = flowAggregate.definition.when[previousFlowStateName];
 
-  const nextFlowStateName = flowAggregate.api.forTransitions.state.is;
-  const whensForPreviousFlowState = flowAggregate.definition.when[previousFlowStateName];
-
-  if (!whensForPreviousFlowState) {
-    return process.nextTick(() => callback(null));
-  }
-
-  const when = whensForPreviousFlowState[nextFlowStateName];
-
-  if (!when) {
-    return process.nextTick(() => callback(null));
-  }
-
-  const that = this;
-  const mark = {
-    asDone () {
-      process.nextTick(() => callback(null));
-    },
-    asFailed (reason) {
-      const err = new Error(reason);
-
-      that.logger.error('Failed to run reaction.', { err });
-      process.nextTick(() => callback(null));
+    if (!whensForPreviousFlowState) {
+      return;
     }
-  };
 
-  try {
-    if (when.length === 4) {
-      when(flowAggregate.api.forWhen, domainEvent, services, mark);
-    } else {
-      when(flowAggregate.api.forWhen, domainEvent, mark);
+    const when = whensForPreviousFlowState[nextFlowStateName];
+
+    if (!when) {
+      return;
     }
-  } catch (ex) {
-    this.logger.error('Failed to run reaction.', { err: ex });
-    process.nextTick(() => callback(null));
+
+    domainEvent.fail = reason => {
+      this.logger.error('Failed to run reaction.', { reason });
+    };
+
+    try {
+      await when(flowAggregate.api.forWhen, domainEvent, services);
+    } catch (ex) {
+      this.logger.error('Failed to run reaction.', { ex });
+    }
   }
-};
+}
 
 module.exports = EventHandler;

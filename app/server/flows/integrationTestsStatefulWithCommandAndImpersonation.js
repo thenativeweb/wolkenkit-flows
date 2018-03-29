@@ -18,17 +18,13 @@ const transitions = {
 
 const when = {
   pristine: {
-    completed (flow, event, services, mark) {
-      const app = services.get('app');
-
+    completed (flow, event, { app }) {
       app.planning.peerGroup().start({
         initiator: event.data.initiator,
         destination: event.data.destination
       }, {
         asUser: event.data.asUser
       });
-
-      mark.asDone();
     }
   }
 };

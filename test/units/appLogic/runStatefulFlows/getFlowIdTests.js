@@ -6,200 +6,121 @@ const assert = require('assertthat'),
 const getFlowId = require('../../../../appLogic/runStatefulFlows/getFlowId');
 
 suite('getFlowId', () => {
-  test('is a function.', done => {
+  test('is a function.', async () => {
     assert.that(getFlowId).is.ofType('function');
-    done();
   });
 
-  test('throws an error if options are missing.', done => {
-    assert.that(() => {
-      getFlowId();
-    }).is.throwing('Options are missing.');
-    done();
-  });
-
-  test('throws an error if domain event is missing.', done => {
+  test('throws an error if domain event is missing.', async () => {
     assert.that(() => {
       getFlowId({});
     }).is.throwing('Domain event is missing.');
-    done();
   });
 
-  test('throws an error if flow is missing.', done => {
+  test('throws an error if flow is missing.', async () => {
     assert.that(() => {
       getFlowId({ domainEvent: {}});
     }).is.throwing('Flow is missing.');
-    done();
   });
 
-  suite('workflow step', () => {
-    test('is a function.', done => {
-      const workflowStep = getFlowId({
-        domainEvent: {},
-        flow: {}
-      });
+  test('returns the flow id.', async () => {
+    const aggregateId = uuid();
 
-      assert.that(workflowStep).is.ofType('function');
-      done();
-    });
+    const domainEvent = {
+      context: { name: 'planning' },
+      aggregate: { name: 'peerGroup', id: aggregateId },
+      name: 'started'
+    };
 
-    test('throws an error if callback is missing.', done => {
-      const workflowStep = getFlowId({
-        domainEvent: {},
-        flow: {}
-      });
+    const flow = {
+      identity: { 'planning.peerGroup.started': event => event.aggregate.id },
+      name: 'some-flow'
+    };
 
-      assert.that(() => {
-        workflowStep();
-      }).is.throwing('Callback is missing.');
-      done();
-    });
+    const flowId = getFlowId({ flow, domainEvent });
 
-    test('returns the flow id.', done => {
-      const aggregateId = uuid();
+    assert.that(flowId).is.equalTo(uuid.fromString(`some-flow-${aggregateId}`));
+  });
 
-      const givenOptions = {
-        domainEvent: {
-          context: { name: 'planning' },
-          aggregate: { name: 'peerGroup', id: aggregateId },
-          name: 'started'
-        },
-        flow: {
-          identity: {
-            'planning.peerGroup.started': event => event.aggregate.id
-          },
-          name: 'some-flow'
-        }
-      };
+  test('derives the flow id from the flow name.', async () => {
+    const aggregateId = uuid();
 
-      const workflowStep = getFlowId(givenOptions);
+    const domainEvent = {
+      context: { name: 'planning' },
+      aggregate: { name: 'peerGroup', id: aggregateId },
+      name: 'started'
+    };
 
-      workflowStep((err, flowId) => {
-        assert.that(err).is.null();
-        assert.that(flowId).is.equalTo(uuid.fromString(`some-flow-${aggregateId}`));
-        done();
-      });
-    });
+    const flow = {
+      identity: { 'planning.peerGroup.started': event => event.aggregate.id },
+      name: 'some-flow'
+    };
 
-    test('derives the flow id from the flow name.', done => {
-      const aggregateId = uuid();
+    const flowId1 = getFlowId({ flow, domainEvent }),
+          flowId2 = getFlowId({ flow, domainEvent });
 
-      const givenOptions = {
-        domainEvent: {
-          context: { name: 'planning' },
-          aggregate: { name: 'peerGroup', id: aggregateId },
-          name: 'started'
-        },
-        flow: {
-          identity: {
-            'planning.peerGroup.started': event => event.aggregate.id
-          },
-          name: 'some-flow'
-        }
-      };
+    assert.that(flowId1).is.equalTo(flowId2);
+  });
 
-      const workflowStep = getFlowId(givenOptions);
+  test('derives different flow ids from different flow names, even if the event is the same.', async () => {
+    const aggregateId = uuid();
 
-      workflowStep((err1, flowId1) => {
-        assert.that(err1).is.null();
+    const domainEvent1 = {
+      context: { name: 'planning' },
+      aggregate: { name: 'peerGroup', id: aggregateId },
+      name: 'started'
+    };
 
-        workflowStep((err2, flowId2) => {
-          assert.that(err2).is.null();
-          assert.that(flowId1).is.equalTo(flowId2);
-          done();
-        });
-      });
-    });
+    const flow1 = {
+      identity: { 'planning.peerGroup.started': event => event.aggregate.id },
+      name: 'some-flow'
+    };
 
-    test('derives different flow ids from different flow names, even if the event is the same.', done => {
-      const aggregateId = uuid();
+    const domainEvent2 = {
+      context: { name: 'planning' },
+      aggregate: { name: 'peerGroup', id: aggregateId },
+      name: 'started'
+    };
 
-      const givenOptions1 = {
-        domainEvent: {
-          context: { name: 'planning' },
-          aggregate: { name: 'peerGroup', id: aggregateId },
-          name: 'started'
-        },
-        flow: {
-          identity: {
-            'planning.peerGroup.started': event => event.aggregate.id
-          },
-          name: 'some-flow'
-        }
-      };
+    const flow2 = {
+      identity: { 'planning.peerGroup.started': event => event.aggregate.id },
+      name: 'some-other-flow'
+    };
 
-      const givenOptions2 = {
-        domainEvent: {
-          context: { name: 'planning' },
-          aggregate: { name: 'peerGroup', id: aggregateId },
-          name: 'started'
-        },
-        flow: {
-          identity: {
-            'planning.peerGroup.started': event => event.aggregate.id
-          },
-          name: 'some-other-flow'
-        }
-      };
+    const flowId1 = getFlowId({ flow: flow1, domainEvent: domainEvent1 }),
+          flowId2 = getFlowId({ flow: flow2, domainEvent: domainEvent2 });
 
-      const workflowStep1 = getFlowId(givenOptions1);
-      const workflowStep2 = getFlowId(givenOptions2);
+    assert.that(flowId1).is.not.equalTo(flowId2);
+  });
 
-      workflowStep1((err1, flowId1) => {
-        assert.that(err1).is.null();
+  test('derives different flow ids for different aggregate ids, even if the flow name and the events are the same.', async () => {
+    const aggregateId1 = uuid(),
+          aggregateId2 = uuid();
 
-        workflowStep2((err2, flowId2) => {
-          assert.that(err2).is.null();
-          assert.that(flowId1).is.not.equalTo(flowId2);
-          done();
-        });
-      });
-    });
+    const domainEvent1 = {
+      context: { name: 'planning' },
+      aggregate: { name: 'peerGroup', id: aggregateId1 },
+      name: 'started'
+    };
 
-    test('derives different flow ids for different aggregate ids, even if the flow name and the events are the same.', done => {
-      const aggregateId1 = uuid(),
-            aggregateId2 = uuid();
+    const flow1 = {
+      identity: { 'planning.peerGroup.started': event => event.aggregate.id },
+      name: 'some-flow'
+    };
 
-      const givenOptions1 = {
-        domainEvent: {
-          context: { name: 'planning' },
-          aggregate: { name: 'peerGroup', id: aggregateId1 },
-          name: 'started'
-        },
-        flow: {
-          identity: {
-            'planning.peerGroup.started': event => event.aggregate.id
-          },
-          name: 'some-flow'
-        }
-      };
+    const domainEvent2 = {
+      context: { name: 'planning' },
+      aggregate: { name: 'peerGroup', id: aggregateId2 },
+      name: 'started'
+    };
 
-      const givenOptions2 = {
-        domainEvent: {
-          context: { name: 'planning' },
-          aggregate: { name: 'peerGroup', id: aggregateId2 },
-          name: 'started'
-        },
-        flow: {
-          identity: {
-            'planning.peerGroup.started': event => event.aggregate.id
-          },
-          name: 'some-flow'
-        }
-      };
+    const flow2 = {
+      identity: { 'planning.peerGroup.started': event => event.aggregate.id },
+      name: 'some-flow'
+    };
 
-      const workflowStep1 = getFlowId(givenOptions1);
-      const workflowStep2 = getFlowId(givenOptions2);
+    const flowId1 = getFlowId({ flow: flow1, domainEvent: domainEvent1 }),
+          flowId2 = getFlowId({ flow: flow2, domainEvent: domainEvent2 });
 
-      workflowStep1((err1, flowId1) => {
-        assert.that(err1).is.null();
-
-        workflowStep2((err2, flowId2) => {
-          assert.that(err2).is.null();
-          assert.that(flowId1).is.not.equalTo(flowId2);
-          done();
-        });
-      });
-    });
+    assert.that(flowId1).is.not.equalTo(flowId2);
   });
 });

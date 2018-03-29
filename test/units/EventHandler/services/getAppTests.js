@@ -7,13 +7,14 @@ const assert = require('assertthat'),
       uuid = require('uuidv4'),
       WolkenkitApplication = require('wolkenkit-application');
 
-const App = require('../../../../../EventHandler/Services/app/App'),
-      buildEvent = require('../../../../helpers/buildEvent');
+const buildEvent = require('../../../helpers/buildEvent'),
+      getApp = require('../../../../EventHandler/services/getApp');
 
-const tailwindApp = tailwind.createApp(),
-      writeModel = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', '..', '..', 'app')).writeModel;
+const app = tailwind.createApp({});
 
-suite('App', () => {
+const { writeModel } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', '..', 'app'));
+
+suite('getApp', () => {
   let domainEvent,
       unpublishedCommands;
 
@@ -27,80 +28,56 @@ suite('App', () => {
     unpublishedCommands = [];
   });
 
-  test('is a function.', done => {
-    assert.that(App).is.ofType('function');
-    done();
+  test('is a function.', async () => {
+    assert.that(getApp).is.ofType('function');
   });
 
-  test('throws an error if options are missing.', done => {
+  test('throws an error if app is missing.', async () => {
     assert.that(() => {
-      /* eslint-disable no-new */
-      new App();
-      /* eslint-enable no-new */
-    }).is.throwing('Options are missing.');
-    done();
-  });
-
-  test('throws an error if app is missing.', done => {
-    assert.that(() => {
-      /* eslint-disable no-new */
-      new App({});
-      /* eslint-enable no-new */
+      getApp({});
     }).is.throwing('App is missing.');
-    done();
   });
 
-  test('throws an error if domain event is missing.', done => {
+  test('throws an error if domain event is missing.', async () => {
     assert.that(() => {
-      /* eslint-disable no-new */
-      new App({ app: tailwindApp });
-      /* eslint-enable no-new */
+      getApp({ app });
     }).is.throwing('Domain event is missing.');
-    done();
   });
 
-  test('throws an error if unpublished commands are missing.', done => {
+  test('throws an error if unpublished commands are missing.', async () => {
     assert.that(() => {
-      /* eslint-disable no-new */
-      new App({ app: tailwindApp, domainEvent });
-      /* eslint-enable no-new */
+      getApp({ app, domainEvent });
     }).is.throwing('Unpublished commands are missing.');
-    done();
   });
 
-  test('throws an error if write model is missing.', done => {
+  test('throws an error if write model is missing.', async () => {
     assert.that(() => {
-      /* eslint-disable no-new */
-      new App({ app: tailwindApp, domainEvent, unpublishedCommands });
-      /* eslint-enable no-new */
+      getApp({ app, domainEvent, unpublishedCommands });
     }).is.throwing('Write model is missing.');
-    done();
   });
 
-  test('has contexts.', done => {
-    const instance = new App({ app: tailwindApp, domainEvent, unpublishedCommands, writeModel });
+  test('has contexts.', async () => {
+    const appService = getApp({ app, domainEvent, unpublishedCommands, writeModel });
 
-    assert.that(instance.planning).is.ofType('object');
-    done();
+    assert.that(appService.planning).is.ofType('object');
   });
 
   suite('contexts', () => {
-    let instance;
+    let appService;
 
     setup(() => {
-      instance = new App({ app: tailwindApp, domainEvent, unpublishedCommands, writeModel });
+      appService = getApp({ app, domainEvent, unpublishedCommands, writeModel });
     });
 
-    test('contains aggregates and commands defined by the write model.', done => {
-      assert.that(instance.planning.peerGroup).is.ofType('function');
-      assert.that(instance.planning.peerGroup().start).is.ofType('function');
-      assert.that(instance.planning.peerGroup().join).is.ofType('function');
-      done();
+    test('contains aggregates and commands defined by the write model.', async () => {
+      assert.that(appService.planning.peerGroup).is.ofType('function');
+      assert.that(appService.planning.peerGroup().start).is.ofType('function');
+      assert.that(appService.planning.peerGroup().join).is.ofType('function');
     });
 
     suite('commands', () => {
-      test('adds the desired command as uncommitted command to the flow aggregate.', done => {
-        instance.planning.peerGroup().start({
+      test('adds the desired command as uncommitted command to the flow aggregate.', async () => {
+        appService.planning.peerGroup().start({
           initiator: 'Jane Doe',
           destination: 'Riva'
         });
@@ -113,16 +90,14 @@ suite('App', () => {
           initiator: 'Jane Doe',
           destination: 'Riva'
         });
-
-        done();
       });
 
-      test('adds multiple commands as uncommitted commands to the flow aggregate.', done => {
-        instance.planning.peerGroup().start({
+      test('adds multiple commands as uncommitted commands to the flow aggregate.', async () => {
+        appService.planning.peerGroup().start({
           initiator: 'Jane Doe',
           destination: 'Riva'
         });
-        instance.planning.peerGroup().join({
+        appService.planning.peerGroup().join({
           participant: 'Jenny Doe'
         });
 
@@ -141,40 +116,35 @@ suite('App', () => {
         assert.that(unpublishedCommands[1].data).is.equalTo({
           participant: 'Jenny Doe'
         });
-
-        done();
       });
 
-      test('sets the correlation id of the given domain event.', done => {
-        instance.planning.peerGroup().start({
+      test('sets the correlation id of the given domain event.', async () => {
+        appService.planning.peerGroup().start({
           initiator: 'Jane Doe',
           destination: 'Riva'
         });
 
         assert.that(unpublishedCommands[0].metadata.correlationId).is.equalTo(domainEvent.metadata.correlationId);
-        done();
       });
 
-      test('adds the user of the given domain event.', done => {
-        instance.planning.peerGroup().start({
+      test('adds the user of the given domain event.', async () => {
+        appService.planning.peerGroup().start({
           initiator: 'Jane Doe',
           destination: 'Riva'
         });
 
         assert.that(unpublishedCommands[0].user.id).is.equalTo(domainEvent.user.id);
-        done();
       });
 
-      test('impersonates the command user if a user is given.', done => {
+      test('impersonates the command user if a user is given.', async () => {
         const asUser = uuid();
 
-        instance.planning.peerGroup().start({
+        appService.planning.peerGroup().start({
           initiator: 'Jane Doe',
           destination: 'Riva'
         }, { asUser });
 
         assert.that(unpublishedCommands[0].user.id).is.equalTo(asUser);
-        done();
       });
     });
   });
