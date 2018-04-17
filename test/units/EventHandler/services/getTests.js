@@ -7,7 +7,7 @@ const assert = require('assertthat'),
       uuid = require('uuidv4'),
       WolkenkitApplication = require('wolkenkit-application');
 
-const buildEvent = require('../../../helpers/buildEvent'),
+const buildEvent = require('../../../shared/buildEvent'),
       getServices = require('../../../../EventHandler/services/get');
 
 const app = tailwind.createApp({});

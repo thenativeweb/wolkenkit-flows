@@ -16,7 +16,7 @@ const transitions = {
   }
 };
 
-const when = {
+const reactions = {
   pristine: {
     completed () {
       // Intentionally left blank.
@@ -24,4 +24,4 @@ const when = {
   }
 };
 
-module.exports = { identity, initialState, transitions, when };
+module.exports = { identity, initialState, transitions, reactions };

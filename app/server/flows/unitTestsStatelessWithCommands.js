@@ -1,6 +1,6 @@
 'use strict';
 
-const when = {
+const reactions = {
   'unitTests.stateless.sendCommand' (event, { app }) {
     app.planning.peerGroup().start({
       initiator: event.data.initiator,
@@ -9,4 +9,4 @@ const when = {
   }
 };
 
-module.exports = { when };
+module.exports = { reactions };

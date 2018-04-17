@@ -10,6 +10,6 @@ const initialState = {
 
 const transitions = {};
 
-const when = {};
+const reactions = {};
 
-module.exports = { identity, initialState, transitions, when };
+module.exports = { identity, initialState, transitions, reactions };

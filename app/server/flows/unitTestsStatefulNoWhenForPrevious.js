@@ -16,7 +16,7 @@ const transitions = {
   }
 };
 
-const when = {
+const reactions = {
   waiting: {
     completed (flow, event, { logger }) {
       logger.info('Should not be recorded by the tests.');
@@ -24,4 +24,4 @@ const when = {
   }
 };
 
-module.exports = { identity, initialState, transitions, when };
+module.exports = { identity, initialState, transitions, reactions };

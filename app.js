@@ -9,7 +9,7 @@ const processEnv = require('processenv'),
 const logic = require('./appLogic'),
       repository = require('./repository');
 
-const eventStore = require(`sparbuch/${processEnv('EVENTSTORE_TYPE')}`);
+const eventStore = require(`wolkenkit-eventstore/${processEnv('EVENTSTORE_TYPE')}`);
 
 (async () => {
   const app = tailwind.createApp({

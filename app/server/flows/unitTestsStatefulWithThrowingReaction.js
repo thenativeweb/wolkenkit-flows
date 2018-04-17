@@ -16,7 +16,7 @@ const transitions = {
   }
 };
 
-const when = {
+const reactions = {
   pristine: {
     completed () {
       throw new Error('Something went wrong.');
@@ -24,4 +24,4 @@ const when = {
   }
 };
 
-module.exports = { identity, initialState, transitions, when };
+module.exports = { identity, initialState, transitions, reactions };

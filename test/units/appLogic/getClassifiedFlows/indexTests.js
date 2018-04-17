@@ -24,7 +24,7 @@ suite('getClassifiedFlows', () => {
           'planning.peerGroup.started' () {}
         }
       },
-      when: {
+      reactions: {
         pristine: {
           completed () {}
         }
@@ -32,7 +32,7 @@ suite('getClassifiedFlows', () => {
     };
 
     const flowStateless = {
-      when: {
+      reactions: {
         'planning.peerGroup.joined' () {}
       }
     };
@@ -51,7 +51,7 @@ suite('getClassifiedFlows', () => {
 
   test('ignores missing stateful flows.', async () => {
     const flowStateless = {
-      when: {
+      reactions: {
         'planning.peerGroup.joined' () {}
       }
     };
@@ -75,7 +75,7 @@ suite('getClassifiedFlows', () => {
           'planning.peerGroup.started' () {}
         }
       },
-      when: {
+      reactions: {
         pristine: {
           completed () {}
         }

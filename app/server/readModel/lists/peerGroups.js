@@ -4,7 +4,7 @@ const fields = {
   foo: 'bar'
 };
 
-const when = {
+const projections = {
   /* eslint-disable no-unused-vars */
   async 'planning.peerGroup.started' (event) {
     // ...
@@ -16,4 +16,4 @@ const when = {
   /* eslint-enable no-unused-vars */
 };
 
-module.exports = { fields, when };
+module.exports = { fields, projections };

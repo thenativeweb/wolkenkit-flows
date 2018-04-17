@@ -18,7 +18,7 @@ const transitions = {
   }
 };
 
-const when = {
+const reactions = {
   pristine: {
     async failed (flow, event) {
       let res;
@@ -36,4 +36,4 @@ const when = {
   }
 };
 
-module.exports = { identity, initialState, transitions, when };
+module.exports = { identity, initialState, transitions, reactions };

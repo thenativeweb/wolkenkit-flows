@@ -1,6 +1,6 @@
 'use strict';
 
-const when = {
+const reactions = {
   'unitTests.stateless.doesNothing' () {
     // Intentionally left blank.
   },
@@ -14,4 +14,4 @@ const when = {
   }
 };
 
-module.exports = { when };
+module.exports = { reactions };

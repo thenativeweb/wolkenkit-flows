@@ -2,7 +2,7 @@
 
 const needle = require('needle');
 
-const when = {
+const reactions = {
   'integrationTests.stateless.doesNothing' () {
     // Intentionally left blank.
   },
@@ -24,4 +24,4 @@ const when = {
   }
 };
 
-module.exports = { when };
+module.exports = { reactions };

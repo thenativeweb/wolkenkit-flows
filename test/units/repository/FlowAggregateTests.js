@@ -7,7 +7,7 @@ const assert = require('assertthat'),
       uuid = require('uuidv4'),
       WolkenkitApplication = require('wolkenkit-application');
 
-const buildEvent = require('../../helpers/buildEvent'),
+const buildEvent = require('../../shared/buildEvent'),
       FlowAggregate = require('../../../repository/FlowAggregate');
 
 const app = tailwind.createApp({});
@@ -100,7 +100,7 @@ suite('FlowAggregate', () => {
       assert.that(flowAggregate.definition).is.ofType('object');
       assert.that(flowAggregate.definition.initialState).is.equalTo({ is: 'pristine' });
       assert.that(flowAggregate.definition.transitions.pristine['unitTests.stateful.first']).is.ofType('function');
-      assert.that(flowAggregate.definition.when.pristine.completed).is.ofType('function');
+      assert.that(flowAggregate.definition.reactions.pristine.completed).is.ofType('function');
     });
   });
 

@@ -16,7 +16,7 @@ const transitions = {
   }
 };
 
-const when = {
+const reactions = {
   pristine: {
     completed (flow, event, { app }) {
       app.planning.peerGroup().start({
@@ -27,4 +27,4 @@ const when = {
   }
 };
 
-module.exports = { identity, initialState, transitions, when };
+module.exports = { identity, initialState, transitions, reactions };

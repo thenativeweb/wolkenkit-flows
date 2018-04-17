@@ -28,7 +28,7 @@ const transitions = {
   }
 };
 
-const when = {
+const reactions = {
   setPort: {
     async completed (flow, event) {
       const { port } = flow.state;
@@ -48,4 +48,4 @@ const when = {
   }
 };
 
-module.exports = { identity, initialState, transitions, when };
+module.exports = { identity, initialState, transitions, reactions };

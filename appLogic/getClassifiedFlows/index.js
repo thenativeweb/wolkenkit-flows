@@ -30,7 +30,7 @@ const getClassifiedFlows = function (flows) {
         break;
       }
       case 'stateless': {
-        forOwn(flow.when, (eventListener, eventName) => {
+        forOwn(flow.reactions, (eventListener, eventName) => {
           classifiedFlows.stateless[eventName] = classifiedFlows.stateless[eventName] || [];
           classifiedFlows.stateless[eventName].push(flow);
         });

@@ -29,7 +29,7 @@ class EventHandler {
     }
 
     const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`;
-    const eventListener = flow.when[eventName];
+    const eventListener = flow.reactions[eventName];
 
     domainEvent.fail = reason => {
       this.logger.error('Failed to run reaction.', { reason });
@@ -88,7 +88,7 @@ class EventHandler {
     });
 
     const nextFlowStateName = flowAggregate.api.forTransitions.state.is;
-    const whensForPreviousFlowState = flowAggregate.definition.when[previousFlowStateName];
+    const whensForPreviousFlowState = flowAggregate.definition.reactions[previousFlowStateName];
 
     if (!whensForPreviousFlowState) {
       return;

@@ -3,15 +3,15 @@
 const path = require('path');
 
 const assert = require('assertthat'),
-      EventStore = require('sparbuch/lib/postgres/Sparbuch'),
+      EventStore = require('wolkenkit-eventstore/dist/postgres/Eventstore'),
       measureTime = require('measure-time'),
       runfork = require('runfork'),
       tailwind = require('tailwind'),
       uuid = require('uuidv4'),
       WolkenkitApplication = require('wolkenkit-application');
 
-const buildEvent = require('../../helpers/buildEvent'),
-      env = require('../../helpers/env'),
+const buildEvent = require('../../shared/buildEvent'),
+      env = require('../../shared/env'),
       FlowAggregate = require('../../../repository/FlowAggregate'),
       Repository = require('../../../repository/Repository');
 
@@ -45,7 +45,7 @@ suite('Repository', function () {
     await new Promise(async (resolve, reject) => {
       try {
         runfork({
-          path: path.join(__dirname, '..', '..', 'helpers', 'runResetPostgres.js'),
+          path: path.join(__dirname, '..', '..', 'shared', 'runResetPostgres.js'),
           env: {
             NAMESPACE: `testflows`,
             URL: env.POSTGRES_URL_PERFORMANCE
@@ -101,7 +101,7 @@ suite('Repository', function () {
         const elapsed = getElapsed();
 
         outputElapsed(elapsed);
-        assert.that(elapsed.millisecondsTotal).is.lessThan(15 * 1000);
+        assert.that(elapsed.millisecondsTotal).is.lessThan(30 * 1000);
       });
     });
 

@@ -17,7 +17,7 @@ suite('getFlowType', () => {
 
   test('classifies stateless flows.', async () => {
     assert.that(getFlowType({
-      when: {}
+      reactions: {}
     })).is.equalTo('stateless');
   });
 
@@ -28,7 +28,7 @@ suite('getFlowType', () => {
       },
       initialState: {},
       transitions: {},
-      when: {}
+      reactions: {}
     })).is.equalTo('stateful');
   });
 
@@ -36,7 +36,7 @@ suite('getFlowType', () => {
     assert.that(() => {
       getFlowType({
         transitions: {},
-        when: {}
+        reactions: {}
       });
     }).is.throwing('Unknown flow type.');
   });

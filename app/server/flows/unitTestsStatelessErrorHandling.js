@@ -1,6 +1,6 @@
 'use strict';
 
-const when = {
+const reactions = {
   'unitTests.stateless.fail' () {
     throw new Error('Something, somewhere, went horribly wrong.');
   },
@@ -12,4 +12,4 @@ const when = {
   }
 };
 
-module.exports = { when };
+module.exports = { reactions };

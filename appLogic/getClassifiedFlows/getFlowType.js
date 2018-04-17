@@ -5,10 +5,10 @@ const getFlowType = function (flow) {
     throw new Error('Flow is missing.');
   }
 
-  if (flow.identity && flow.initialState && flow.transitions && flow.when) {
+  if (flow.identity && flow.initialState && flow.transitions && flow.reactions) {
     return 'stateful';
   }
-  if (!flow.identity && !flow.initialState && !flow.transitions && flow.when) {
+  if (!flow.identity && !flow.initialState && !flow.transitions && flow.reactions) {
     return 'stateless';
   }
 

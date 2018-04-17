@@ -8,7 +8,7 @@ const assert = require('assertthat'),
       uuid = require('uuidv4'),
       WolkenkitApplication = require('wolkenkit-application');
 
-const buildEvent = require('../../helpers/buildEvent'),
+const buildEvent = require('../../shared/buildEvent'),
       EventHandler = require('../../../EventHandler'),
       FlowAggregate = require('../../../repository/FlowAggregate');
 
