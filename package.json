@@ -13,14 +13,14 @@
     }
   ],
   "dependencies": {
-    "lodash": "4.17.5",
+    "lodash": "4.17.10",
     "pg": "7.4.1",
     "processenv": "1.0.0",
     "require-dir": "1.0.0",
-    "tailwind": "2.0.4",
+    "tailwind": "2.1.0",
     "uuidv4": "1.0.0",
     "wolkenkit-application": "2.0.0",
-    "wolkenkit-eventstore": "2.3.0"
+    "wolkenkit-eventstore": "2.3.1"
   },
   "devDependencies": {
     "amqplib": "0.5.2",
@@ -30,7 +30,7 @@
     "hase": "1.0.2",
     "knockat": "1.0.4",
     "measure-time": "3.1.1",
-    "needle": "2.2.0",
+    "needle": "2.2.1",
     "pg-connection-string": "2.0.0",
     "record-stdstreams": "1.0.0",
     "roboter": "1.0.2",

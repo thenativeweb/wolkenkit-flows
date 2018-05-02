@@ -6,6 +6,7 @@ const { EventEmitter } = require('events'),
 const assert = require('assertthat'),
       EventStore = require('wolkenkit-eventstore/dist/postgres/Eventstore'),
       hase = require('hase'),
+      request = require('needle'),
       runfork = require('runfork'),
       shell = require('shelljs'),
       uuid = require('uuidv4');
@@ -99,7 +100,9 @@ suite('integrationTests', function () {
         EVENTSTORE_URL: env.POSTGRES_URL_INTEGRATION,
         EVENTSTORE_TYPE: 'postgres',
         PROFILING_HOST: 'localhost',
-        PROFILING_PORT: 8125
+        PROFILING_PORT: 8125,
+        STATUS_PORT: 3001,
+        STATUS_CORS_ORIGIN: '*'
       },
       onExit (exitCode) {
         appLifecycle.emit('exit', exitCode);
@@ -459,6 +462,14 @@ suite('integrationTests', function () {
           })()
         ]);
       });
+    });
+  });
+
+  suite('status api', () => {
+    test('answers with api version v1.', async () => {
+      const res = await request('get', 'http://localhost:3001/v1/status');
+
+      assert.that(res.body).is.equalTo({ api: 'v1' });
     });
   });
 });

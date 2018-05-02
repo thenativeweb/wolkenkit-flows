@@ -39,5 +39,10 @@ const eventStore = require(`wolkenkit-eventstore/${processEnv('EVENTSTORE_TYPE')
     application: app.env('APPLICATION')
   }));
 
+  await app.status.use(new app.wires.status.http.Server({
+    port: app.env('STATUS_PORT'),
+    corsOrigin: app.env('STATUS_CORS_ORIGIN')
+  }));
+
   logic({ app, eventStore, flows, writeModel });
 })();
