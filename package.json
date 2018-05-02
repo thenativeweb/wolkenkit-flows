@@ -36,8 +36,7 @@
     "roboter": "1.0.2",
     "runfork": "1.0.3",
     "shelljs": "0.8.1",
-    "streamtoarray": "1.0.0",
-    "superagent": "3.8.3"
+    "streamtoarray": "1.0.0"
   },
   "scripts": {
     "build": "docker build -t thenativeweb/wolkenkit-flows ."

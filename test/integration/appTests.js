@@ -6,7 +6,7 @@ const { EventEmitter } = require('events'),
 const assert = require('assertthat'),
       EventStore = require('wolkenkit-eventstore/dist/postgres/Eventstore'),
       hase = require('hase'),
-      request = require('superagent'),
+      request = require('needle'),
       runfork = require('runfork'),
       shell = require('shelljs'),
       uuid = require('uuidv4');
@@ -467,7 +467,7 @@ suite('integrationTests', function () {
 
   suite('status api', () => {
     test('answers with api version v1.', async () => {
-      const res = await request.get('http://localhost:3001/v1/status');
+      const res = await request('get', 'http://localhost:3001/v1/status');
 
       assert.that(res.body).is.equalTo({ api: 'v1' });
     });
