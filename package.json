@@ -14,28 +14,28 @@
   ],
   "dependencies": {
     "lodash": "4.17.10",
-    "pg": "7.4.1",
-    "processenv": "1.0.0",
+    "pg": "7.4.3",
+    "processenv": "1.0.1",
     "require-dir": "1.0.0",
-    "tailwind": "2.1.0",
-    "uuidv4": "1.0.0",
-    "wolkenkit-application": "2.0.0",
-    "wolkenkit-eventstore": "2.3.1"
+    "tailwind": "2.1.1",
+    "uuidv4": "1.0.1",
+    "wolkenkit-application": "2.0.2",
+    "wolkenkit-eventstore": "2.4.1"
   },
   "devDependencies": {
     "amqplib": "0.5.2",
     "assertthat": "1.0.0",
     "async-retry": "1.2.1",
-    "commands-events": "1.0.1",
-    "hase": "1.0.2",
+    "commands-events": "1.0.3",
+    "hase": "1.0.3",
     "knockat": "1.0.4",
     "measure-time": "3.1.1",
     "needle": "2.2.1",
     "pg-connection-string": "2.0.0",
     "record-stdstreams": "1.0.0",
-    "roboter": "1.0.2",
+    "roboter": "1.0.4",
     "runfork": "1.0.3",
-    "shelljs": "0.8.1",
+    "shelljs": "0.8.2",
     "streamtoarray": "1.0.0"
   },
   "scripts": {
