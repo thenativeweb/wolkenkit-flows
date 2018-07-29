@@ -2,11 +2,11 @@
 
 const path = require('path');
 
-const assert = require('assertthat'),
+const applicationManager = require('wolkenkit-application'),
+      assert = require('assertthat'),
       record = require('record-stdstreams'),
       tailwind = require('tailwind'),
-      uuid = require('uuidv4'),
-      WolkenkitApplication = require('wolkenkit-application');
+      uuid = require('uuidv4');
 
 const buildEvent = require('../../shared/buildEvent'),
       EventHandler = require('../../../EventHandler'),
@@ -14,9 +14,19 @@ const buildEvent = require('../../shared/buildEvent'),
 
 const app = tailwind.createApp({});
 
-const { flows, writeModel } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', 'app'));
-
 suite('EventHandler', () => {
+  let flows,
+      writeModel;
+
+  suiteSetup(async () => {
+    const application = await applicationManager.load({
+      directory: path.join(__dirname, '..', '..', '..', 'app')
+    });
+
+    flows = application.flows;
+    writeModel = application.writeModel;
+  });
+
   test('is a function.', async () => {
     assert.that(EventHandler).is.ofType('function');
   });

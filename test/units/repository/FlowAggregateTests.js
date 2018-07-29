@@ -2,22 +2,27 @@
 
 const path = require('path');
 
-const assert = require('assertthat'),
+const applicationManager = require('wolkenkit-application'),
+      assert = require('assertthat'),
       tailwind = require('tailwind'),
-      uuid = require('uuidv4'),
-      WolkenkitApplication = require('wolkenkit-application');
+      uuid = require('uuidv4');
 
 const buildEvent = require('../../shared/buildEvent'),
       FlowAggregate = require('../../../repository/FlowAggregate');
 
 const app = tailwind.createApp({});
 
-const { flows } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', 'app'));
-
 suite('FlowAggregate', () => {
   let domainEvent,
       flowAggregate,
-      flowId;
+      flowId,
+      flows;
+
+  suiteSetup(async () => {
+    flows = (await applicationManager.load({
+      directory: path.join(__dirname, '..', '..', '..', 'app')
+    })).flows;
+  });
 
   setup(() => {
     domainEvent = buildEvent('unitTests', 'stateful', 'first', {});

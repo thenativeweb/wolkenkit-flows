@@ -2,13 +2,13 @@
 
 const path = require('path');
 
-const assert = require('assertthat'),
+const applicationManager = require('wolkenkit-application'),
+      assert = require('assertthat'),
       EventStore = require('wolkenkit-eventstore/dist/postgres/Eventstore'),
       measureTime = require('measure-time'),
       runfork = require('runfork'),
       tailwind = require('tailwind'),
-      uuid = require('uuidv4'),
-      WolkenkitApplication = require('wolkenkit-application');
+      uuid = require('uuidv4');
 
 const buildEvent = require('../../shared/buildEvent'),
       env = require('../../shared/env'),
@@ -16,8 +16,6 @@ const buildEvent = require('../../shared/buildEvent'),
       Repository = require('../../../repository/Repository');
 
 const app = tailwind.createApp({});
-
-const { flows } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', 'app'));
 
 const outputElapsed = function (elapsed) {
   /* eslint-disable no-console */
@@ -30,7 +28,13 @@ suite('Repository', function () {
 
   const eventStore = new EventStore();
 
+  let flows;
+
   suiteSetup(async () => {
+    flows = (await applicationManager.load({
+      directory: path.join(__dirname, '..', '..', '..', 'app')
+    })).flows;
+
     await eventStore.initialize({
       url: env.POSTGRES_URL_PERFORMANCE,
       namespace: 'testflows'

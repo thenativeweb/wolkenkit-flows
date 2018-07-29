@@ -2,14 +2,14 @@
 
 const path = require('path');
 
-const assert = require('assertthat'),
+const applicationManager = require('wolkenkit-application'),
+      assert = require('assertthat'),
       cloneDeep = require('lodash/cloneDeep'),
       EventStore = require('wolkenkit-eventstore/dist/postgres/Eventstore'),
       runfork = require('runfork'),
       tailwind = require('tailwind'),
       toArray = require('streamtoarray'),
-      uuid = require('uuidv4'),
-      WolkenkitApplication = require('wolkenkit-application');
+      uuid = require('uuidv4');
 
 const buildEvent = require('../../shared/buildEvent'),
       env = require('../../shared/env'),
@@ -18,12 +18,16 @@ const buildEvent = require('../../shared/buildEvent'),
 
 const app = tailwind.createApp({});
 
-const { flows } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', 'app'));
-
 suite('Repository', () => {
   const eventStore = new EventStore();
 
+  let flows;
+
   suiteSetup(async () => {
+    flows = (await applicationManager.load({
+      directory: path.join(__dirname, '..', '..', '..', 'app')
+    })).flows;
+
     await eventStore.initialize({
       url: env.POSTGRES_URL_UNITS,
       namespace: 'testflows'

@@ -2,21 +2,26 @@
 
 const path = require('path');
 
-const assert = require('assertthat'),
+const applicationManager = require('wolkenkit-application'),
+      assert = require('assertthat'),
       tailwind = require('tailwind'),
-      uuid = require('uuidv4'),
-      WolkenkitApplication = require('wolkenkit-application');
+      uuid = require('uuidv4');
 
 const buildEvent = require('../../../shared/buildEvent'),
       getApp = require('../../../../EventHandler/services/getApp');
 
 const app = tailwind.createApp({});
 
-const { writeModel } = new WolkenkitApplication(path.join(__dirname, '..', '..', '..', '..', 'app'));
-
 suite('getApp', () => {
   let domainEvent,
-      unpublishedCommands;
+      unpublishedCommands,
+      writeModel;
+
+  suiteSetup(async () => {
+    writeModel = (await applicationManager.load({
+      directory: path.join(__dirname, '..', '..', '..', '..', 'app')
+    })).writeModel;
+  });
 
   setup(() => {
     domainEvent = buildEvent('planning', 'peerGroup', 'started', {
