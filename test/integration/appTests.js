@@ -60,7 +60,7 @@ suite('integrationTests', function () {
 
     appLifecycle = new EventEmitter();
 
-    mq = await hase.connect(env.RABBITMQ_URL_INTEGRATION);
+    mq = await hase.connect({ url: env.RABBITMQ_URL_INTEGRATION });
 
     eventStore = new EventStore();
     await eventStore.initialize({
