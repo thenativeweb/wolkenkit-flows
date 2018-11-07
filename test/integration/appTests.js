@@ -125,7 +125,9 @@ suite('integrationTests', function () {
     await stopApp();
   });
 
-  test('exits when the connection to the command bus / flow bus is lost.', async () => {
+  test('exits when the connection to the command bus / flow bus is lost.', async function () {
+    this.timeout(25 * 1000);
+
     await new Promise((resolve, reject) => {
       try {
         appLifecycle.once('exit', async () => {
