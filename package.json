@@ -13,21 +13,21 @@
     }
   ],
   "dependencies": {
-    "flaschenpost": "1.1.1",
+    "flaschenpost": "1.1.3",
     "lodash": "4.17.11",
-    "pg": "7.4.3",
+    "pg": "7.8.0",
     "processenv": "1.1.0",
-    "require-dir": "1.1.0",
-    "tailwind": "2.4.1",
+    "require-dir": "1.2.0",
+    "tailwind": "3.0.0",
     "uuidv4": "2.0.0",
     "wolkenkit-application": "3.0.0",
     "wolkenkit-eventstore": "2.5.0"
   },
   "devDependencies": {
-    "amqplib": "0.5.2",
-    "assertthat": "2.0.0",
+    "amqplib": "0.5.3",
+    "assertthat": "2.0.1",
     "async-retry": "1.2.3",
-    "commands-events": "1.0.3",
+    "commands-events": "1.0.4",
     "common-tags": "1.8.0",
     "hase": "2.0.0",
     "knockat": "1.0.4",
@@ -35,9 +35,9 @@
     "needle": "2.2.4",
     "pg-connection-string": "2.0.0",
     "record-stdstreams": "1.0.0",
-    "roboter": "2.1.0",
+    "roboter": "3.0.4",
     "runfork": "1.0.3",
-    "shelljs": "0.8.2",
+    "shelljs": "0.8.3",
     "streamtoarray": "1.0.0"
   },
   "scripts": {
