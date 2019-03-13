@@ -1,7 +1,7 @@
 'use strict';
 
 const fields = {
-  foo: 'bar'
+  foo: { initialState: 'bar' }
 };
 
 const projections = {

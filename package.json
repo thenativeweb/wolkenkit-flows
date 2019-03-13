@@ -18,14 +18,14 @@
     "pg": "7.8.0",
     "processenv": "1.1.0",
     "require-dir": "1.2.0",
-    "tailwind": "3.0.0",
-    "uuidv4": "2.0.0",
-    "wolkenkit-application": "3.0.0",
+    "tailwind": "3.1.0",
+    "uuidv4": "3.0.1",
+    "wolkenkit-application": "4.3.0",
     "wolkenkit-eventstore": "2.5.0"
   },
   "devDependencies": {
     "amqplib": "0.5.3",
-    "assertthat": "2.0.1",
+    "assertthat": "2.0.3",
     "async-retry": "1.2.3",
     "commands-events": "1.0.4",
     "common-tags": "1.8.0",
@@ -35,10 +35,10 @@
     "needle": "2.2.4",
     "pg-connection-string": "2.0.0",
     "record-stdstreams": "1.0.0",
-    "roboter": "3.0.4",
-    "runfork": "1.0.3",
+    "roboter": "4.0.2",
+    "runfork": "1.1.0",
     "shelljs": "0.8.3",
-    "streamtoarray": "1.0.0"
+    "streamtoarray": "1.1.0"
   },
   "scripts": {
     "build": "docker build -t thenativeweb/wolkenkit-flows ."

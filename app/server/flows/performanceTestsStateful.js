@@ -8,8 +8,20 @@ const initialState = {
   is: 'pristine'
 };
 
-const transitions = {};
+const transitions = {
+  pristine: {
+    'performanceTests.stateful.first' (flow) {
+      flow.transitionTo('completed');
+    }
+  }
+};
 
-const reactions = {};
+const reactions = {
+  pristine: {
+    completed () {
+      // Intentionally left blank.
+    }
+  }
+};
 
 module.exports = { identity, initialState, transitions, reactions };
