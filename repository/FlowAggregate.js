@@ -59,7 +59,7 @@ class FlowAggregate {
       });
 
       flowEvent.metadata.revision = this.instance.revision + this.instance.uncommittedEvents.length + 1;
-      this.instance.uncommittedEvents.push(flowEvent);
+      this.instance.uncommittedEvents.push({ event: flowEvent });
     };
 
     this.api = {};

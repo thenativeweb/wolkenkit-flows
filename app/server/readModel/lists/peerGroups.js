@@ -6,14 +6,22 @@ const fields = {
 
 const projections = {
   /* eslint-disable no-unused-vars */
-  async 'planning.peerGroup.started' (event) {
+  'planning.peerGroup.started' (event) {
     // ...
   },
 
-  async 'planning.peerGroup.joined' (event) {
+  'planning.peerGroup.joined' (event) {
     // ...
   }
   /* eslint-enable no-unused-vars */
 };
 
-module.exports = { fields, projections };
+const queries = {
+  readItem: {
+    isAuthorized () {
+      return true;
+    }
+  }
+};
+
+module.exports = { fields, projections, queries };

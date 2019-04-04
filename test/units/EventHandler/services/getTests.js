@@ -29,7 +29,7 @@ suite('getServices', () => {
       initiator: 'Jane Doe',
       destination: 'Riva'
     });
-    domainEvent.addUser({ id: uuid() });
+    domainEvent.addInitiator({ id: uuid() });
 
     flow = { name: 'sample-flow' };
     unpublishedCommands = [];

@@ -17,12 +17,7 @@ const buildEvent = function (contextName, aggregateName, aggregateId, eventName,
     data,
     metadata: {
       correlationId: uuid(),
-      causationId: uuid(),
-      isAuthorized: {
-        owner: uuid(),
-        forAuthenticated: false,
-        forPublic: true
-      }
+      causationId: uuid()
     }
   });
 

@@ -179,12 +179,12 @@ suite('FlowAggregate', () => {
           });
 
           assert.that(flowAggregate.instance.uncommittedEvents.length).is.equalTo(1);
-          assert.that(flowAggregate.instance.uncommittedEvents[0].context.name).is.equalTo('flows');
-          assert.that(flowAggregate.instance.uncommittedEvents[0].aggregate.name).is.equalTo('unitTestsStateful');
-          assert.that(flowAggregate.instance.uncommittedEvents[0].aggregate.id).is.equalTo(flowId);
-          assert.that(flowAggregate.instance.uncommittedEvents[0].name).is.equalTo('transitioned');
-          assert.that(flowAggregate.instance.uncommittedEvents[0].data).is.equalTo({ is: 'completed' });
-          assert.that(flowAggregate.instance.uncommittedEvents[0].metadata.revision).is.equalTo(1);
+          assert.that(flowAggregate.instance.uncommittedEvents[0].event.context.name).is.equalTo('flows');
+          assert.that(flowAggregate.instance.uncommittedEvents[0].event.aggregate.name).is.equalTo('unitTestsStateful');
+          assert.that(flowAggregate.instance.uncommittedEvents[0].event.aggregate.id).is.equalTo(flowId);
+          assert.that(flowAggregate.instance.uncommittedEvents[0].event.name).is.equalTo('transitioned');
+          assert.that(flowAggregate.instance.uncommittedEvents[0].event.data).is.equalTo({ is: 'completed' });
+          assert.that(flowAggregate.instance.uncommittedEvents[0].event.metadata.revision).is.equalTo(1);
         });
 
         test('sets the correlation and the causation id of the new event.', async () => {
@@ -193,8 +193,8 @@ suite('FlowAggregate', () => {
           });
 
           assert.that(flowAggregate.instance.uncommittedEvents.length).is.equalTo(1);
-          assert.that(flowAggregate.instance.uncommittedEvents[0].metadata.correlationId).is.equalTo(domainEvent.metadata.correlationId);
-          assert.that(flowAggregate.instance.uncommittedEvents[0].metadata.causationId).is.equalTo(domainEvent.id);
+          assert.that(flowAggregate.instance.uncommittedEvents[0].event.metadata.correlationId).is.equalTo(domainEvent.metadata.correlationId);
+          assert.that(flowAggregate.instance.uncommittedEvents[0].event.metadata.causationId).is.equalTo(domainEvent.id);
         });
 
         test('does not increase the aggregate revision.', async () => {

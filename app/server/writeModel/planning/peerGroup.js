@@ -6,24 +6,48 @@ const initialState = {
 
 const commands = {
   /* eslint-disable no-unused-vars */
-  async start (peerGroup, command) {
-    // ...
+  start: {
+    isAuthorized () {
+      return true;
+    },
+
+    handle (peerGroup, command) {
+      // ...
+    }
   },
 
-  async join (peerGroup, command) {
-    // ...
+  join: {
+    isAuthorized () {
+      return true;
+    },
+
+    handle (peerGroup, command) {
+      // ...
+    }
   }
   /* eslint-enable no-unused-vars */
 };
 
 const events = {
   /* eslint-disable no-unused-vars */
-  started (peerGroup, event) {
-    // ...
+  started: {
+    handle (peerGroup, event) {
+      // ...
+    },
+
+    isAuthorized () {
+      return true;
+    }
   },
 
-  joined (peerGroup, event) {
-    // ...
+  joined: {
+    handle (peerGroup, event) {
+      // ...
+    },
+
+    isAuthorized () {
+      return true;
+    }
   }
   /* eslint-enable no-unused-vars */
 };

@@ -5,7 +5,7 @@ const path = require('path');
 const applicationManager = require('wolkenkit-application'),
       assert = require('assertthat'),
       cloneDeep = require('lodash/cloneDeep'),
-      EventStore = require('wolkenkit-eventstore/dist/postgres/Eventstore'),
+      EventStore = require('wolkenkit-eventstore/lib/postgres/Eventstore'),
       runfork = require('runfork'),
       tailwind = require('tailwind'),
       toArray = require('streamtoarray'),
@@ -157,7 +157,12 @@ suite('Repository', () => {
         waiting.metadata.revision = 1;
         completed.metadata.revision = 2;
 
-        await eventStore.saveEvents({ events: [ waiting, completed ]});
+        await eventStore.saveEvents({
+          uncommittedEvents: [
+            { event: waiting, state: {}},
+            { event: completed, state: {}}
+          ]
+        });
 
         const flowAggregateReplayed = await repository.loadAggregateForDomainEvent({
           aggregate: { name: 'unitTestsStateful', id: flowId },
@@ -185,7 +190,7 @@ suite('Repository', () => {
 
         await repository.saveAggregate({ aggregate: flowAggregate });
 
-        const eventStream = await eventStore.getEventStream(flowId);
+        const eventStream = await eventStore.getEventStream({ aggregateId: flowId });
         const events = await toArray(eventStream);
 
         assert.that(events.length).is.equalTo(0);
@@ -199,7 +204,7 @@ suite('Repository', () => {
 
         await repository.saveAggregate({ aggregate: flowAggregate });
 
-        const eventStream = await eventStore.getEventStream(flowId);
+        const eventStream = await eventStore.getEventStream({ aggregateId: flowId });
         const events = await toArray(eventStream);
 
         assert.that(events.length).is.equalTo(2);

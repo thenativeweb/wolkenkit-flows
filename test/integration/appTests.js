@@ -4,7 +4,7 @@ const { EventEmitter } = require('events'),
       path = require('path');
 
 const assert = require('assertthat'),
-      EventStore = require('wolkenkit-eventstore/dist/postgres/Eventstore'),
+      EventStore = require('wolkenkit-eventstore/lib/postgres/Eventstore'),
       hase = require('hase'),
       request = require('needle'),
       runfork = require('runfork'),
@@ -16,6 +16,8 @@ const buildEvent = require('../shared/buildEvent'),
       waitForHost = require('../shared/waitForHost'),
       waitForPostgres = require('../shared/waitForPostgres'),
       waitForRabbitMq = require('../shared/waitForRabbitMq');
+
+const isDebugMode = true;
 
 suite('integrationTests', function () {
   this.timeout(15 * 1000);
@@ -31,17 +33,19 @@ suite('integrationTests', function () {
 
   const waitForCommand = async function (commandName) {
     const getOnData = function (resolve) {
-      const onData = function (command) {
-        command.next();
+      const onData = function (message) {
+        const { command, metadata } = message.payload;
 
-        if (command.payload.name !== commandName) {
+        message.next();
+
+        if (command.name !== commandName) {
           return;
         }
 
         commandbus.pause();
         commandbus.removeListener('data', onData);
 
-        resolve(command);
+        resolve({ command, metadata });
       };
 
       return onData;
@@ -106,7 +110,8 @@ suite('integrationTests', function () {
       },
       onExit (exitCode) {
         appLifecycle.emit('exit', exitCode);
-      }
+      },
+      silent: !isDebugMode
     });
 
     await new Promise(resolve => setTimeout(resolve, 2 * 1000));
@@ -123,48 +128,6 @@ suite('integrationTests', function () {
 
     await eventStore.destroy();
     await stopApp();
-  });
-
-  test('exits when the connection to the command bus / flow bus is lost.', async function () {
-    this.timeout(25 * 1000);
-
-    await new Promise((resolve, reject) => {
-      try {
-        appLifecycle.once('exit', async () => {
-          try {
-            shell.exec('docker start rabbitmq-integration');
-            await waitForRabbitMq({ url: env.RABBITMQ_URL_INTEGRATION });
-          } catch (ex) {
-            return reject(ex);
-          }
-          resolve();
-        });
-
-        shell.exec('docker kill rabbitmq-integration');
-      } catch (ex) {
-        reject(ex);
-      }
-    });
-  });
-
-  test('exits when the connection to the event store is lost.', async () => {
-    await new Promise((resolve, reject) => {
-      try {
-        appLifecycle.once('exit', async () => {
-          try {
-            shell.exec('docker start postgres-integration');
-            await waitForPostgres({ url: env.POSTGRES_URL_INTEGRATION });
-          } catch (ex) {
-            return reject(ex);
-          }
-          resolve();
-        });
-
-        shell.exec('docker kill postgres-integration');
-      } catch (ex) {
-        reject(ex);
-      }
-    });
   });
 
   suite('stateless flows', () => {
@@ -191,7 +154,7 @@ suite('integrationTests', function () {
               port: 3000
             });
 
-            flowbus.write(event);
+            flowbus.write({ event, metadata: { state: {}, previousState: {}}});
           })()
         ]);
       });
@@ -204,57 +167,51 @@ suite('integrationTests', function () {
           initiator: 'Jane Doe'
         });
 
-        event.addUser({ id: uuid() });
+        event.addInitiator({ id: uuid() });
 
-        await Promise.all([
-          (async () => {
-            const command = await waitForCommand('start');
+        process.nextTick(() => {
+          flowbus.write({ event, metadata: { state: {}, previousState: {}}});
+        });
 
-            assert.that(command.payload.context.name).is.equalTo('planning');
-            assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
-            assert.that(command.payload.name).is.equalTo('start');
-            assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
-            assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
-            assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
-            assert.that(command.payload.user).is.equalTo({
-              id: event.user.id,
-              token: { sub: event.user.id }
-            });
-          })(),
-          (async () => {
-            flowbus.write(event);
-          })()
-        ]);
+        const { command } = await waitForCommand('start');
+
+        assert.that(command.context.name).is.equalTo('planning');
+        assert.that(command.aggregate.name).is.equalTo('peerGroup');
+        assert.that(command.name).is.equalTo('start');
+        assert.that(command.data.initiator).is.equalTo(event.data.initiator);
+        assert.that(command.data.destination).is.equalTo(event.data.destination);
+        assert.that(command.metadata.correlationId).is.equalTo(event.metadata.correlationId);
+        assert.that(command.initiator).is.equalTo({
+          id: event.initiator.id,
+          token: { sub: event.initiator.id }
+        });
       });
 
       test('sends a command as another user when the flow tries to impersonate.', async () => {
-        const event = buildEvent('integrationTests', 'stateless', 'sendCommandAsUser', {
+        const event = buildEvent('integrationTests', 'stateless', 'sendCommandAsInitiator', {
           destination: 'Riva',
           initiator: 'Jane Doe',
-          asUser: uuid()
+          asInitiator: uuid()
         });
 
-        event.addUser({ id: uuid() });
+        event.addInitiator({ id: uuid() });
 
-        await Promise.all([
-          (async () => {
-            const command = await waitForCommand('start');
+        process.nextTick(() => {
+          flowbus.write({ event, metadata: { state: {}, previousState: {}}});
+        });
 
-            assert.that(command.payload.context.name).is.equalTo('planning');
-            assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
-            assert.that(command.payload.name).is.equalTo('start');
-            assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
-            assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
-            assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
-            assert.that(command.payload.user).is.equalTo({
-              id: event.data.asUser,
-              token: { sub: event.data.asUser }
-            });
-          })(),
-          (async () => {
-            flowbus.write(event);
-          })()
-        ]);
+        const { command } = await waitForCommand('start');
+
+        assert.that(command.context.name).is.equalTo('planning');
+        assert.that(command.aggregate.name).is.equalTo('peerGroup');
+        assert.that(command.name).is.equalTo('start');
+        assert.that(command.data.initiator).is.equalTo(event.data.initiator);
+        assert.that(command.data.destination).is.equalTo(event.data.destination);
+        assert.that(command.metadata.correlationId).is.equalTo(event.metadata.correlationId);
+        assert.that(command.initiator).is.equalTo({
+          id: event.data.asInitiator,
+          token: { sub: event.data.asInitiator }
+        });
       });
     });
 
@@ -282,8 +239,8 @@ suite('integrationTests', function () {
               port: 3000
             });
 
-            flowbus.write(invalidEvent);
-            flowbus.write(validEvent);
+            flowbus.write({ event: invalidEvent, metadata: { state: {}, previousState: {}}});
+            flowbus.write({ event: validEvent, metadata: { state: {}, previousState: {}}});
           })()
         ]);
       });
@@ -311,8 +268,8 @@ suite('integrationTests', function () {
               port: 3000
             });
 
-            flowbus.write(invalidEvent);
-            flowbus.write(validEvent);
+            flowbus.write({ event: invalidEvent, metadata: { state: {}, previousState: {}}});
+            flowbus.write({ event: validEvent, metadata: { state: {}, previousState: {}}});
           })()
         ]);
       });
@@ -343,7 +300,7 @@ suite('integrationTests', function () {
               port: 3000
             });
 
-            flowbus.write(event);
+            flowbus.write({ event, metadata: { state: {}, previousState: {}}});
           })()
         ]);
       });
@@ -371,8 +328,8 @@ suite('integrationTests', function () {
             });
             const eventCallExternalService = buildEvent('integrationTests', 'statefulPersistState', eventSetPort.aggregate.id, 'callExternalService', {});
 
-            flowbus.write(eventSetPort);
-            flowbus.write(eventCallExternalService);
+            flowbus.write({ event: eventSetPort, metadata: { state: {}, previousState: {}}});
+            flowbus.write({ event: eventCallExternalService, metadata: { state: {}, previousState: {}}});
           })()
         ]);
       });
@@ -385,57 +342,51 @@ suite('integrationTests', function () {
           initiator: 'Jane Doe'
         });
 
-        event.addUser({ id: uuid() });
+        event.addInitiator({ id: uuid() });
 
-        await Promise.all([
-          (async () => {
-            const command = await waitForCommand('start');
+        process.nextTick(() => {
+          flowbus.write({ event, metadata: { state: {}, previousState: {}}});
+        });
 
-            assert.that(command.payload.context.name).is.equalTo('planning');
-            assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
-            assert.that(command.payload.name).is.equalTo('start');
-            assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
-            assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
-            assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
-            assert.that(command.payload.user).is.equalTo({
-              id: event.user.id,
-              token: { sub: event.user.id }
-            });
-          })(),
-          (async () => {
-            flowbus.write(event);
-          })()
-        ]);
+        const { command } = await waitForCommand('start');
+
+        assert.that(command.context.name).is.equalTo('planning');
+        assert.that(command.aggregate.name).is.equalTo('peerGroup');
+        assert.that(command.name).is.equalTo('start');
+        assert.that(command.data.initiator).is.equalTo(event.data.initiator);
+        assert.that(command.data.destination).is.equalTo(event.data.destination);
+        assert.that(command.metadata.correlationId).is.equalTo(event.metadata.correlationId);
+        assert.that(command.initiator).is.equalTo({
+          id: event.initiator.id,
+          token: { sub: event.initiator.id }
+        });
       });
 
       test('sends a command as another user when the flow tries to impersonate.', async () => {
-        const event = buildEvent('integrationTests', 'statefulWithCommandAndImpersonation', 'sendCommandAsUser', {
+        const event = buildEvent('integrationTests', 'statefulWithCommandAndImpersonation', 'sendCommandAsInitiator', {
           destination: 'Riva',
           initiator: 'Jane Doe',
-          asUser: uuid()
+          asInitiator: uuid()
         });
 
-        event.addUser({ id: uuid() });
+        event.addInitiator({ id: uuid() });
 
-        await Promise.all([
-          (async () => {
-            const command = await waitForCommand('start');
+        process.nextTick(() => {
+          flowbus.write({ event, metadata: { state: {}, previousState: {}}});
+        });
 
-            assert.that(command.payload.context.name).is.equalTo('planning');
-            assert.that(command.payload.aggregate.name).is.equalTo('peerGroup');
-            assert.that(command.payload.name).is.equalTo('start');
-            assert.that(command.payload.data.initiator).is.equalTo(event.data.initiator);
-            assert.that(command.payload.data.destination).is.equalTo(event.data.destination);
-            assert.that(command.payload.metadata.correlationId).is.equalTo(event.metadata.correlationId);
-            assert.that(command.payload.user).is.equalTo({
-              id: event.data.asUser,
-              token: { sub: event.data.asUser }
-            });
-          })(),
-          (async () => {
-            flowbus.write(event);
-          })()
-        ]);
+        const { command } = await waitForCommand('start');
+
+        assert.that(command.context.name).is.equalTo('planning');
+        assert.that(command.aggregate.name).is.equalTo('peerGroup');
+        assert.that(command.name).is.equalTo('start');
+        assert.that(command.data.initiator).is.equalTo(event.data.initiator);
+        assert.that(command.data.destination).is.equalTo(event.data.destination);
+        assert.that(command.metadata.correlationId).is.equalTo(event.metadata.correlationId);
+        assert.that(command.initiator).is.equalTo({
+          id: event.data.asInitiator,
+          token: { sub: event.data.asInitiator }
+        });
       });
     });
 
@@ -460,7 +411,7 @@ suite('integrationTests', function () {
 
             const event = buildEvent('integrationTests', 'statefulFailedState', 'fail', {});
 
-            flowbus.write(event);
+            flowbus.write({ event, metadata: { state: {}, previousState: {}}});
           })()
         ]);
       });
@@ -472,6 +423,50 @@ suite('integrationTests', function () {
       const res = await request('get', 'http://localhost:3001/v1/status');
 
       assert.that(res.body).is.equalTo({ api: 'v1' });
+    });
+  });
+
+  suite('infrastructure outeage', () => {
+    test('exits when the connection to the command bus / flow bus is lost.', async function () {
+      this.timeout(25 * 1000);
+
+      await new Promise((resolve, reject) => {
+        try {
+          appLifecycle.once('exit', async () => {
+            try {
+              shell.exec('docker start rabbitmq-integration');
+              await waitForRabbitMq({ url: env.RABBITMQ_URL_INTEGRATION });
+            } catch (ex) {
+              return reject(ex);
+            }
+            resolve();
+          });
+
+          shell.exec('docker kill rabbitmq-integration');
+        } catch (ex) {
+          reject(ex);
+        }
+      });
+    });
+
+    test('exits when the connection to the event store is lost.', async () => {
+      await new Promise((resolve, reject) => {
+        try {
+          appLifecycle.once('exit', async () => {
+            try {
+              shell.exec('docker start postgres-integration');
+              await waitForPostgres({ url: env.POSTGRES_URL_INTEGRATION });
+            } catch (ex) {
+              return reject(ex);
+            }
+            resolve();
+          });
+
+          shell.exec('docker kill postgres-integration');
+        } catch (ex) {
+          reject(ex);
+        }
+      });
     });
   });
 });

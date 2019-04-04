@@ -8,12 +8,12 @@ const reactions = {
     });
   },
 
-  'integrationTests.stateless.sendCommandAsUser' (event, { app }) {
+  'integrationTests.stateless.sendCommandAsInitiator' (event, { app }) {
     app.planning.peerGroup().start({
       initiator: event.data.initiator,
       destination: event.data.destination
     }, {
-      asUser: event.data.asUser
+      asInitiator: event.data.asInitiator
     });
   }
 };

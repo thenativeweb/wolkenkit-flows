@@ -1,7 +1,7 @@
 'use strict';
 
 const identity = {
-  'integrationTests.statefulWithCommandAndImpersonation.sendCommandAsUser': event => event.aggregate.id
+  'integrationTests.statefulWithCommandAndImpersonation.sendCommandAsInitiator': event => event.aggregate.id
 };
 
 const initialState = {
@@ -10,7 +10,7 @@ const initialState = {
 
 const transitions = {
   pristine: {
-    'integrationTests.statefulWithCommandAndImpersonation.sendCommandAsUser' (flow) {
+    'integrationTests.statefulWithCommandAndImpersonation.sendCommandAsInitiator' (flow) {
       flow.transitionTo('completed');
     }
   }
@@ -23,7 +23,7 @@ const reactions = {
         initiator: event.data.initiator,
         destination: event.data.destination
       }, {
-        asUser: event.data.asUser
+        asInitiator: event.data.asInitiator
       });
     }
   }

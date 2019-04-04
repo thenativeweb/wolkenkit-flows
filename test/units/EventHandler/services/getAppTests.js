@@ -28,7 +28,7 @@ suite('getApp', () => {
       initiator: 'Jane Doe',
       destination: 'Riva'
     });
-    domainEvent.addUser({ id: uuid() });
+    domainEvent.addInitiator({ id: uuid() });
 
     unpublishedCommands = [];
   });
@@ -88,10 +88,10 @@ suite('getApp', () => {
         });
 
         assert.that(unpublishedCommands.length).is.equalTo(1);
-        assert.that(unpublishedCommands[0].context.name).is.equalTo('planning');
-        assert.that(unpublishedCommands[0].aggregate.name).is.equalTo('peerGroup');
-        assert.that(unpublishedCommands[0].name).is.equalTo('start');
-        assert.that(unpublishedCommands[0].data).is.equalTo({
+        assert.that(unpublishedCommands[0].command.context.name).is.equalTo('planning');
+        assert.that(unpublishedCommands[0].command.aggregate.name).is.equalTo('peerGroup');
+        assert.that(unpublishedCommands[0].command.name).is.equalTo('start');
+        assert.that(unpublishedCommands[0].command.data).is.equalTo({
           initiator: 'Jane Doe',
           destination: 'Riva'
         });
@@ -107,18 +107,18 @@ suite('getApp', () => {
         });
 
         assert.that(unpublishedCommands.length).is.equalTo(2);
-        assert.that(unpublishedCommands[0].context.name).is.equalTo('planning');
-        assert.that(unpublishedCommands[0].aggregate.name).is.equalTo('peerGroup');
-        assert.that(unpublishedCommands[0].name).is.equalTo('start');
-        assert.that(unpublishedCommands[0].data).is.equalTo({
+        assert.that(unpublishedCommands[0].command.context.name).is.equalTo('planning');
+        assert.that(unpublishedCommands[0].command.aggregate.name).is.equalTo('peerGroup');
+        assert.that(unpublishedCommands[0].command.name).is.equalTo('start');
+        assert.that(unpublishedCommands[0].command.data).is.equalTo({
           initiator: 'Jane Doe',
           destination: 'Riva'
         });
 
-        assert.that(unpublishedCommands[1].context.name).is.equalTo('planning');
-        assert.that(unpublishedCommands[1].aggregate.name).is.equalTo('peerGroup');
-        assert.that(unpublishedCommands[1].name).is.equalTo('join');
-        assert.that(unpublishedCommands[1].data).is.equalTo({
+        assert.that(unpublishedCommands[1].command.context.name).is.equalTo('planning');
+        assert.that(unpublishedCommands[1].command.aggregate.name).is.equalTo('peerGroup');
+        assert.that(unpublishedCommands[1].command.name).is.equalTo('join');
+        assert.that(unpublishedCommands[1].command.data).is.equalTo({
           participant: 'Jenny Doe'
         });
       });
@@ -129,7 +129,7 @@ suite('getApp', () => {
           destination: 'Riva'
         });
 
-        assert.that(unpublishedCommands[0].metadata.correlationId).is.equalTo(domainEvent.metadata.correlationId);
+        assert.that(unpublishedCommands[0].command.metadata.correlationId).is.equalTo(domainEvent.metadata.correlationId);
       });
 
       test('adds the user of the given domain event.', async () => {
@@ -138,18 +138,18 @@ suite('getApp', () => {
           destination: 'Riva'
         });
 
-        assert.that(unpublishedCommands[0].user.id).is.equalTo(domainEvent.user.id);
+        assert.that(unpublishedCommands[0].command.initiator.id).is.equalTo(domainEvent.initiator.id);
       });
 
       test('impersonates the command user if a user is given.', async () => {
-        const asUser = uuid();
+        const asInitiator = uuid();
 
         appService.planning.peerGroup().start({
           initiator: 'Jane Doe',
           destination: 'Riva'
-        }, { asUser });
+        }, { asInitiator });
 
-        assert.that(unpublishedCommands[0].user.id).is.equalTo(asUser);
+        assert.that(unpublishedCommands[0].command.initiator.id).is.equalTo(asInitiator);
       });
     });
   });

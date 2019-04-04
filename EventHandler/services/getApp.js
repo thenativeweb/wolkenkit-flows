@@ -26,9 +26,7 @@ const getApp = function ({ app, domainEvent, unpublishedCommands, writeModel }) 
         const commands = {};
 
         Object.keys(writeModel[contextName][aggregateName].commands).forEach(commandName => {
-          commands[commandName] = function (data, commandOptions) {
-            commandOptions = commandOptions || {};
-
+          commands[commandName] = function (data, { asInitiator } = {}) {
             const command = new app.Command({
               context: {
                 name: contextName
@@ -43,9 +41,11 @@ const getApp = function ({ app, domainEvent, unpublishedCommands, writeModel }) 
 
             command.metadata.causationId = domainEvent.id;
             command.metadata.correlationId = domainEvent.metadata.correlationId;
-            command.addToken({ sub: commandOptions.asUser || domainEvent.user.id });
+            command.addInitiator({
+              token: { sub: asInitiator || domainEvent.initiator.id }
+            });
 
-            unpublishedCommands.push(command);
+            unpublishedCommands.push({ command });
           };
         });
 

@@ -37,10 +37,10 @@ const appLogic = function ({ app, eventStore, flows, writeModel }) {
     });
   });
 
-  app.flowbus.incoming.on('data', async domainEvent => {
-    logger.info('Received event.', { domainEvent });
+  app.flowbus.incoming.on('data', async ({ event, metadata, actions }) => {
+    logger.info('Received event.', { event, metadata });
 
-    const eventName = `${domainEvent.context.name}.${domainEvent.aggregate.name}.${domainEvent.name}`,
+    const eventName = `${event.context.name}.${event.aggregate.name}.${event.name}`,
           unpublishedCommands = [];
 
     const statefulFlows = classifiedFlows.stateful[eventName] || [],
@@ -48,22 +48,25 @@ const appLogic = function ({ app, eventStore, flows, writeModel }) {
 
     try {
       await Promise.all([
-        runStatefulFlows({ eventHandler, flows: statefulFlows, domainEvent, unpublishedCommands }),
-        runStatelessFlows({ eventHandler, flows: statelessFlows, domainEvent, unpublishedCommands })
+        runStatefulFlows({ eventHandler, flows: statefulFlows, domainEvent: event, unpublishedCommands }),
+        runStatelessFlows({ eventHandler, flows: statelessFlows, domainEvent: event, unpublishedCommands })
       ]);
     } catch (ex) {
-      logger.error('Failed to handle event.', { domainEvent, ex });
-      domainEvent.discard();
+      logger.error('Failed to handle event.', { event, metadata, ex });
+      actions.discard();
 
       return;
     }
 
-    unpublishedCommands.forEach(command => {
-      app.commandbus.outgoing.write(command);
-    });
+    for (const unpublishedCommand of unpublishedCommands) {
+      app.commandbus.outgoing.write({
+        command: unpublishedCommand.command,
+        metadata: unpublishedCommand.metadata
+      });
+    }
 
-    logger.info('Successfully handled event.', { domainEvent });
-    domainEvent.next();
+    logger.info('Successfully handled event.', { event, metadata });
+    actions.next();
   });
 };
 

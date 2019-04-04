@@ -62,7 +62,7 @@ class Repository {
     }
 
     await this.eventStore.saveEvents({
-      events: aggregate.instance.uncommittedEvents
+      uncommittedEvents: aggregate.instance.uncommittedEvents
     });
   }
 }

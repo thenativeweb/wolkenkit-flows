@@ -38,7 +38,10 @@ suite('getFlowId', () => {
 
     const flowId = getFlowId({ flow, domainEvent });
 
-    assert.that(flowId).is.equalTo(uuid.fromString(`some-flow-${aggregateId}`));
+    // It is important to ensure that the flow ID actually is a version 4 UUID,
+    // since it is derived from the aggregate ID. In the getFlowId function, we
+    // manually change the version 5 UUID to a version 4 one.
+    assert.that(flowId).is.matching(uuid.regex.v4);
   });
 
   test('derives the flow id from the flow name.', async () => {

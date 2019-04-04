@@ -105,18 +105,18 @@ suite('EventHandler', () => {
         destination: 'Riva'
       });
 
-      domainEvent.addUser({ id: uuid() });
+      domainEvent.addInitiator({ id: uuid() });
 
       const flow = flows.unitTestsStatelessWithCommands;
 
       await eventHandler.forStatelessFlow({ flow, domainEvent, unpublishedCommands });
 
       assert.that(unpublishedCommands.length).is.equalTo(1);
-      assert.that(unpublishedCommands[0].context.name).is.equalTo('planning');
-      assert.that(unpublishedCommands[0].aggregate.name).is.equalTo('peerGroup');
-      assert.that(unpublishedCommands[0].name).is.equalTo('start');
-      assert.that(unpublishedCommands[0].data.initiator).is.equalTo('Jane Doe');
-      assert.that(unpublishedCommands[0].data.destination).is.equalTo('Riva');
+      assert.that(unpublishedCommands[0].command.context.name).is.equalTo('planning');
+      assert.that(unpublishedCommands[0].command.aggregate.name).is.equalTo('peerGroup');
+      assert.that(unpublishedCommands[0].command.name).is.equalTo('start');
+      assert.that(unpublishedCommands[0].command.data.initiator).is.equalTo('Jane Doe');
+      assert.that(unpublishedCommands[0].command.data.destination).is.equalTo('Riva');
     });
 
     test('does not return an error if a listener fails.', async () => {
@@ -235,8 +235,8 @@ suite('EventHandler', () => {
       await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
 
       assert.that(flowAggregate.instance.uncommittedEvents.length).is.equalTo(1);
-      assert.that(flowAggregate.instance.uncommittedEvents[0].name).is.equalTo('transitioned');
-      assert.that(flowAggregate.instance.uncommittedEvents[0].data).is.equalTo({
+      assert.that(flowAggregate.instance.uncommittedEvents[0].event.name).is.equalTo('transitioned');
+      assert.that(flowAggregate.instance.uncommittedEvents[0].event.data).is.equalTo({
         state: { is: 'failed' }
       });
       assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('failed');
@@ -256,8 +256,8 @@ suite('EventHandler', () => {
       await eventHandler.forStatefulFlow({ flow, flowAggregate, domainEvent, unpublishedCommands });
 
       assert.that(flowAggregate.instance.uncommittedEvents.length).is.equalTo(1);
-      assert.that(flowAggregate.instance.uncommittedEvents[0].name).is.equalTo('transitioned');
-      assert.that(flowAggregate.instance.uncommittedEvents[0].data).is.equalTo({
+      assert.that(flowAggregate.instance.uncommittedEvents[0].event.name).is.equalTo('transitioned');
+      assert.that(flowAggregate.instance.uncommittedEvents[0].event.data).is.equalTo({
         state: { is: 'completed', port: 3000 }
       });
       assert.that(flowAggregate.api.forTransitions.state.is).is.equalTo('completed');
