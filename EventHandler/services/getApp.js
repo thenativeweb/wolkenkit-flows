@@ -45,7 +45,15 @@ const getApp = function ({ app, domainEvent, unpublishedCommands, writeModel }) 
               token: { sub: asInitiator || domainEvent.initiator.id }
             });
 
-            unpublishedCommands.push({ command });
+            const metadata = {
+              user: {
+                id: domainEvent.initiator.id,
+                token: { sub: domainEvent.initiator.id }
+              },
+              ip: '0.0.0.0'
+            };
+
+            unpublishedCommands.push({ command, metadata });
           };
         });
 
