@@ -32,7 +32,8 @@ const appLogic = function ({ app, eventStore, flows, writeModel }) {
     wire.connection.on('error', err => {
       app.fail(err);
     });
-    wire.connection.on('disconnect', () => {
+    wire.connection.on('disconnect', err => {
+      logger.error(err.message, { err });
       app.fail(new Error(`Lost connection to ${wire.description}.`));
     });
   });
