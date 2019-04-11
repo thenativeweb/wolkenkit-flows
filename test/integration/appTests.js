@@ -426,7 +426,7 @@ suite('integrationTests', function () {
     });
   });
 
-  suite('infrastructure outeage', () => {
+  suite('infrastructure recovery', () => {
     test('exits when the connection to the command bus / flow bus is lost.', async function () {
       this.timeout(25 * 1000);
 
@@ -456,6 +456,10 @@ suite('integrationTests', function () {
             try {
               shell.exec('docker start postgres-integration');
               await waitForPostgres({ url: env.POSTGRES_URL_INTEGRATION });
+              await eventStore.initialize({
+                url: env.POSTGRES_URL_INTEGRATION,
+                namespace: `${application}flows`
+              });
             } catch (ex) {
               return reject(ex);
             }
